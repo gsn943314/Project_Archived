@@ -246,6 +246,8 @@ def generate(seed=None):
             tr.set_material(0, tmat)
         t.set_actor_label(f'Hint_{i + 1}'); t.set_folder_path('Hints')
 
+    # Rebuild the NavMesh for the new layout; a stale RecastNavMesh leaves the character with no path
+    unreal.SystemLibrary.execute_console_command(unreal.EditorLevelLibrary.get_editor_world(), 'BUILDPATHS')
     unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
     unreal.log(f'[BlockTutorialGen] seed={seed} lanes={len(lanes)} size={COLS}x{ROWS}')
     return {'seed': seed, 'solution': sol, 'lanes': len(lanes), 'size': (COLS, ROWS)}
