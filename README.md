@@ -8,20 +8,33 @@ tags: [Experiment, AI, Active]
 
 ## 開啟方式
 
-1. 用 Unreal Editor 開啟 `mcptest.uproject`
-2. 開啟關卡 `/Game/Project/Maps/Lvl_PathfindingPuzzle`
+1. 安裝 Git LFS 後 clone：`git lfs install && git clone https://github.com/gsn943314/mcptest.git`
+2. 用 Unreal Editor 5.9 開啟 `mcptest.uproject`（預設會開 `Lvl_BlockTutorial`）
 3. 按 Play（PIE）
 
-## 操作
+## 關卡
 
-| 按鍵 | 功能 |
+- `Lvl_BlockTutorial`：方塊教學主關卡
+- `Lvl_BlockTutorial_V2/V3/V4`：隨機生成的同概念版本
+- `Lvl_Terraces`：S 型往上爬，含火 / 霧 / 水 / 船 / 聲音誘餌 / 壓力板 / 門 / 橋
+- `Lvl_PathfindingPuzzle`：最早的平面原型
+
+隨機生成：開一張 `Lvl_BlockTutorial*` 地圖，點選單 **Puzzle → Generate Random Block Tutorial** 或工具列 **Random Level**。
+
+## 操作（PIE 編輯階段）
+
+| 操作 | 功能 |
 |------|------|
-| 左鍵點選紫色障礙物 | 選取（黃框標示） |
-| 左鍵拖曳 | 套用目前的工具 |
+| 左鍵拖曳方塊 | 移動；綠框 = 可以放，紅框 = 不行（放開會回到原位） |
 | `W` / `E` / `R` | 切換 移動 / 旋轉 / 縮放 |
-| 滾輪 | 旋轉 15° 或縮放 10% |
-| HUD ▶ PLAY | 開始跑，鏡頭跟隨角色 |
-| HUD ↺ RESET | 角色回到 A 點，鏡頭回到俯視 |
+| 滾輪 | 已選方塊在旋轉/縮放模式：旋轉 90° / 縮放 1U；否則縮放鏡頭 |
+| 右鍵或中鍵拖曳、方向鍵 | 平移鏡頭 |
+| `F` | 鏡頭回預設位置 |
+| HUD ▶ PLAY / ↺ RESET | 開始 / 重來 |
+
+## 用 AI 協作
+
+`.mcp.json` 已設定好 `unreal-mcp`（Editor 開著時在 `http://127.0.0.1:8000/mcp`）。在專案根目錄開 Claude Code 或 Codex，AI 會讀 `CLAUDE.md` / `AGENTS.md` 了解專案規則。
 
 ## 資料夾結構
 
@@ -29,7 +42,8 @@ tags: [Experiment, AI, Active]
 Content/Project/
 ├── Art/            Meshes, Materials, Textures, Animations, VFX, UI
 ├── Programming/    Blueprints, Input, Data, AI, UI
-└── Maps/           Lvl_PathfindingPuzzle
+├── Maps/           所有關卡
+Content/Python/     隨機關卡生成器與 Editor 選單按鈕
 ```
 
 開發紀錄放在 [devlog/](devlog/PROJECT-HUB.md)。
