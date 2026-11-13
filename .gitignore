@@ -1,0 +1,21 @@
+# Unreal generated files
+/Binaries/
+/Build/
+/DerivedDataCache/
+/Intermediate/
+/Saved/
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
+
+# Local editor and OS files
+.mcp.json
+.codex/config.toml
+.DS_Store
+Thumbs.db
+.vs/
+.idea/
+.vscode/
+*.sln
+*.slnx
+*.xcodeproj/
+*.xcworkspace/
