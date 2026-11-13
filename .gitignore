@@ -18,3 +18,4 @@ Thumbs.db
 *.slnx
 *.xcodeproj/
 *.xcworkspace/
+__pycache__/
