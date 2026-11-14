@@ -28,10 +28,10 @@ ICONS = {  # toolbar icons (AppStyle)
 ENTRIES = [
     # name, label, tooltip, command, toolbar label (None = menu only)
     ('GenBlockTutorial', 'Generate Random Block Tutorial',
-     'Regenerates the OPEN BlockTutorial level with a random layout (duplicate the map first!)', GEN, 'Random Level'),
+     'Regenerates the OPEN BlockTutorial level with a random layout (duplicate the map first!)', GEN, None),
     ('RebuildFromMarkers', 'Rebuild Level From Markers',
      'Rebuilds walls / floors / stairs / holes from the path nodes, floor tiles, holes and blocks, then saves',
-     "import importlib, puzzle_level_tools as T; importlib.reload(T); T.rebuild_from_menu()", 'Rebuild Level'),
+     "import importlib, puzzle_level_tools as T; importlib.reload(T); T.rebuild_from_menu()", None),
     ('ApplyArt', 'Apply Art (MegaJam meshes)',
      'Dresses the open level with the /Game/Dev/Meshes art: stairs, wall caps, edge walls, portal at B (folder Art)',
      "import importlib, puzzle_level_tools as T, view_mode as V, puzzle_art as A; importlib.reload(T); importlib.reload(V); importlib.reload(A); A.apply_from_menu()", None),
@@ -45,7 +45,7 @@ ENTRIES = [
      None),
     ('LiveEdit', 'Live Edit On / Off',
      'Live Edit: markers snap to the grid and the terrain rebuilds automatically while you edit',
-     LIVE, 'Live'),
+     LIVE, None),
     None,
     ('AddPathNode', 'Add Path Node',
      'Adds a yellow path node. With a node selected it is inserted right after it; otherwise appended to PathA',
@@ -56,16 +56,16 @@ ENTRIES = [
     ('AddBranch', 'Add Branch (new corridor)', 'Starts a new corridor chain PathB / PathC ... with two nodes',
      _tool('add_branch'), None),
     ('AddFloor', 'Add Floor Tile (pocket)', 'Adds a blue floor tile = one extra walkable cell / alcove',
-     _tool('add_floor'), 'Floor'),
+     _tool('add_floor'), None),
     ('AddWide', 'Add Widening Floor', 'Adds a brown "+" tile: extra floor that only makes a walkway look wider',
-     _tool('add_wide'), 'Wide'),
+     _tool('add_wide'), None),
     ('AddHole', 'Add Hole', 'Adds a sunken hole in the floor that must be filled with a block',
      _tool('add_hole'), 'Hole'),
     ('AddBlock', 'Add Movable Block (2x2)', 'Adds a purple movable block (fills one hole)',
-     _tool('add_block'), 'Block'),
+     _tool('add_block'), None),
     ('AddThinBlock', 'Add Thin Movable Block (1x2)', 'Adds a thin purple block (two of them fill one hole)',
      _tool('add_thin_block'), None),
-    ('AddEnemy', 'Add Enemy', 'Adds a red enemy block', _tool('add_enemy'), 'Enemy'),
+    ('AddEnemy', 'Add Enemy', 'Adds a red enemy block', _tool('add_enemy'), None),
 ]
 
 

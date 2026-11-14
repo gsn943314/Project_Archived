@@ -598,8 +598,41 @@ def _add_mover(kind, title):
         loc, _ = _anchor()
         _rc, p = _snap(loc, grid)
         a = spawn_mover(kind, p)
+        if kind != 'Enemy':
+            attach_crate(a)
     _select(a)
     return a
+
+
+CRATE = '/Game/Dev/Meshes/SM_Crate'
+
+
+def attach_crate(blk):
+    """Final-render look of a movable block: a crate fitted to the block, attached so it follows it
+    (also into a hole). The purple block is grey-view only (VisGrey), the crate final-view only."""
+    for c in list(_actors()):
+        if c.get_actor_label() == 'ArtCrate_' + blk.get_actor_label():
+            _eas().destroy_actor(c)
+    mesh = unreal.load_asset(CRATE)
+    mb = mesh.get_bounding_box()
+    ex = mb.max - mb.min
+    o, e = blk.get_actor_bounds(True)
+    c = _eas().spawn_actor_from_class(unreal.StaticMeshActor, blk.get_actor_location(), blk.get_actor_rotation())
+    c.root_component.set_mobility(unreal.ComponentMobility.MOVABLE)
+    smc = c.static_mesh_component
+    smc.set_static_mesh(mesh)
+    smc.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    smc.set_editor_property('can_ever_affect_navigation', False)
+    c.set_actor_enable_collision(False)
+    c.set_actor_scale3d(unreal.Vector(e.x * 2 / ex.x * 1.02, e.y * 2 / ex.y * 1.02, e.z * 2 / ex.z * 1.02))
+    c.set_actor_label('ArtCrate_' + blk.get_actor_label())
+    c.set_folder_path('Art_Blocks')
+    c.tags = [unreal.Name('VisFinal'), unreal.Name('NoGreybox')]
+    c.attach_to_actor(blk, '', unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD,
+                      unreal.AttachmentRule.KEEP_WORLD, False)
+    if 'VisGrey' not in [str(t) for t in blk.tags]:
+        blk.tags = list(blk.tags) + [unreal.Name('VisGrey')]
+    return c
 
 
 def add_block():
