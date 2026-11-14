@@ -6,7 +6,9 @@ navigation, so they are rebuilt from scratch every time (Puzzle > Apply Art, or 
 Rebuild on levels whose Editor_Grid has the tag "Art").
 
   stairs        -> SM_PinkStone01 (2x2x2 cells, the tier height must be 350: Editor_Grid tag TierH:350)
-  inner walls   -> SM_StonePlatform01 stacked per tier on wall cells that touch the walkway
+  path floor    -> SM_StonePlatform01 under every walkable cell
+  path sides    -> SM_StoneWall01 / Damaged / Window, sometimes SM_PinkMossStone02 (grey wall cubes stay)
+  turn corners  -> SM_PinkMossStone01; wall tops far from the path get a few SM_StoneCliff01/02
   outer edge    -> SM_StoneWall01 / Damaged / Decor / Window segments, 3 cells long
   point B       -> SM_Portal facing the path
 """
@@ -20,6 +22,11 @@ PLATFORM = M + 'SM_StonePlatform01'
 WALLS = [M + 'SM_StoneWall01', M + 'SM_StoneWall01', M + 'SM_StoneWallDamaged', M + 'SM_StoneWallDecor',
          M + 'SM_StoneWallWindow']
 PORTAL = M + 'SM_Portal'
+SIDES = [M + 'SM_StoneWall01', M + 'SM_StoneWallDamaged', M + 'SM_StoneWallWindow', M + 'SM_PinkMossStone02']
+SIDE_W = [6, 2, 1, 1]
+SIDE_H = 240          # side walls stay low so the third-person camera still sees the character
+CORNER = M + 'SM_PinkMossStone01'
+CLIFFS = [M + 'SM_StoneCliff01', M + 'SM_StoneCliff02']
 STAIR_YAW = -90.0     # SM_PinkStone01 climbs towards +Y at yaw 0
 PORTAL_YAW = 90.0     # SM_Portal faces -Y at yaw 0
 WALL_YAW = 0.0        # SM_StoneWall01 runs along X
@@ -98,26 +105,63 @@ def apply_art(seed=7):
             if lab.startswith(f'Maze_Stair_r{rc[0]}_c{rc[1]}_'):
                 _set_visible(a, False)
         n += 1
-    # inner walls: stone platforms stacked tier by tier on wall cells that touch the walkway
-    for lab, (x0, y0, sx, sy, top, _m, tags) in specs.items():
-        if not lab.startswith('Maze_Wall_'):
-            continue
-        r, c = (int(v[1:]) for v in lab[len('Maze_Wall_'):].split('_'))
-        nb = [walk[(r + dr, c + dc)] for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (r + dr, c + dc) in walk]
-        if not nb:
-            continue
-        low = min(nb) - U                         # visible from one tier below the lowest neighbour
-        z = top
-        k = 0
+    # path blocks: a stone platform under every walkable floor cell (grey cube stays below for collision)
+    # (the cube is hidden but keeps its collision; platforms stack down to the lowest neighbouring ground)
+    for rc, h in floor.items():
+        x, y = T.cell_ctr(rc, grid)
+        nb = [walk[(rc[0] + dr, rc[1] + dc)] for dr in (-1, 0, 1) for dc in (-1, 0, 1)
+              if (rc[0] + dr, rc[1] + dc) in walk]
+        low = min(nb + [h]) - U
+        z, k = h, 0
         while z > low and k < 4:
-            h = min(U, z - low) if k else min(U, top - T.BASE)
-            _place(f'Art_Wall_r{r}_c{c}_{k}', PLATFORM, x0 + C / 2, y0 + C / 2, z - h, (C, C, h),
-                   rng.choice((0, 90, 180, 270)))
-            z -= h
+            _place(f'Art_Path_r{rc[0]}_c{rc[1]}_{k}', PLATFORM, x, y, z - U, (C, C, U), rng.choice((0, 90, 180, 270)))
+            z -= U
             k += 1
-        if k and lab in maze:
-            _set_visible(maze[lab], False)
+        cube = maze.get(f'Maze_Path_r{rc[0]}_c{rc[1]}')
+        if cube:
+            _set_visible(cube, False)
         n += k
+    # walls on both sides of the walkway (grey wall cubes stay as the base)
+    ortho = ((0, 1), (1, 0), (0, -1), (-1, 0))
+    wall_tops = {}
+    for lab, sp in specs.items():
+        if lab.startswith('Maze_Wall_'):
+            r, c = (int(v[1:]) for v in lab[len('Maze_Wall_'):].split('_'))
+            wall_tops[(r, c)] = sp[4]
+    near_stair = set((r + dr, c + dc) for (r, c) in stairs for dr in (-1, 0, 1) for dc in (-1, 0, 1))
+    for rc, h in walk.items():
+        if rc in stairs:
+            continue
+        x, y = T.cell_ctr(rc, grid)
+        for d in ortho:
+            o = (rc[0] + d[0], rc[1] + d[1])
+            if o not in wall_tops or wall_tops[o] < h + 30 or o in near_stair:
+                continue
+            path = rng.choices(SIDES, weights=SIDE_W)[0]
+            yaw = (90 if d[1] else 0) + rng.choice((0, 180))
+            _place(f'Art_Side_r{rc[0]}_c{rc[1]}_{d[0]}{d[1]}', path, x + d[1] * (C / 2 + 50), y + d[0] * (C / 2 + 50), h,
+                   (C, 110, SIDE_H), yaw)
+            n += 1
+    # outer corners of turns: pink moss rocks fill the gap where two side walls meet
+    for (r, c), top in wall_tops.items():
+        if (r, c) in near_stair or any((r + d[0], c + d[1]) in walk for d in ortho):
+            continue
+        for dr, dc in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+            p = (r + dr, c + dc)
+            if p in walk and p not in stairs and (r + dr, c) in wall_tops and (r, c + dc) in wall_tops:
+                x, y = T.cell_ctr((r, c), grid)
+                _place(f'Art_Corner_r{r}_c{c}_{dr}{dc}', CORNER, x + dc * (C / 2 - 20), y + dr * (C / 2 - 20), walk[p],
+                       (200, 200, SIDE_H + 40), rng.choice((0, 90, 180, 270)))
+                n += 1
+    # a few cliffs as decoration on wall tops away from the walkway
+    for (r, c), top in wall_tops.items():
+        if any((r + dr, c + dc) in walk for dr in (-2, -1, 0, 1, 2) for dc in (-2, -1, 0, 1, 2)):
+            continue
+        if rng.random() < 0.12:
+            x, y = T.cell_ctr((r, c), grid)
+            _place(f'Art_Cliff_r{r}_c{c}', rng.choice(CLIFFS), x, y, top - 20, (C * 0.9, C * 0.9, 200),
+                   rng.choice((0, 90, 180, 270)))
+            n += 1
     # outer edge: decorated stone walls along the border, 3 cells per segment
     def edge(side, cells, fixed):
         nonlocal n
