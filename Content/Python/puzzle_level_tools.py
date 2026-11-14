@@ -24,6 +24,7 @@ PIT = 175.0        # hole depth = block height
 OPEN_STAIR_SIDE = True   # lower the camera-side wall next to stairs (grey-box levels)
 ISLAND = True            # cut the terrain away outside the rim walls (level stands like an island)
 BACKDROP_Z = -1800.0     # the ground plane far below the island
+RIM = 175.0              # thickness of the rim walls on the island edge (half a cell)
 BASE = -440.0
 AGGRO = 900.0
 L_SCALE = (3.5, 3.5, 1.75)
@@ -317,7 +318,18 @@ def geometry_specs(floor, pits, stairs, grid):
             elif (r, c) in stair_adj:
                 top = max(top, stair_adj[(r, c)] + 60)
             x, y = cell_min((r, c), grid)
-            specs[f'Maze_Wall_r{r}_c{c}'] = (x, y, C, C, top, MW, ('Wall',))
+            sx = sy = C
+            if ISLAND:                                  # rim walls are half a cell thick on the outside
+                if (r, c - 1) in outside:
+                    x += C - RIM; sx -= C - RIM
+                if (r, c + 1) in outside:
+                    sx -= C - RIM
+                if (r - 1, c) in outside:
+                    y += C - RIM; sy -= C - RIM
+                if (r + 1, c) in outside:
+                    sy -= C - RIM
+                sx, sy = max(sx, RIM), max(sy, RIM)
+            specs[f'Maze_Wall_r{r}_c{c}'] = (x, y, sx, sy, top, MW, ('Wall',))
     return specs, (r0, r1, c0, c1)
 
 
