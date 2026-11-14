@@ -125,7 +125,7 @@ def sync_greybox():
             continue
         if maze and (mesh.get_name() in STAIR_ART or 'Platform' in mesh.get_name()):
             continue
-        p = prof.get(mesh.get_name(), {'shape': 'Box', 'pad': 0.0})
+        p = prof.get(mesh.get_name(), {'shape': 'Arch' if 'Arch' in mesh.get_name() else 'Box', 'pad': 0.0})
         shape = p['shape'].lower()
         if shape == 'none':
             continue
@@ -164,6 +164,23 @@ def sync_greybox():
                     center = unreal.Vector((mn.x + mx.x) / 2, c0, mn.z + h / 2)
                     ext = unreal.Vector(mx.x - mn.x, length, h)
                 _proxy(f'{lab}_{i}', xf, center, ext, mat)
+                n += 1
+            continue
+        if shape == 'arch':
+            # two pillars + lintel across the longer horizontal axis, opening left free
+            along_x = (mx.x - mn.x) >= (mx.y - mn.y)
+            lo, hi = (mn.x, mx.x) if along_x else (mn.y, mx.y)
+            span, dep = hi - lo, ((mx.y - mn.y) if along_x else (mx.x - mn.x))
+            dc = (mn.y + mx.y) / 2 if along_x else (mn.x + mx.x) / 2
+            pw, h = span * 0.24, mx.z - mn.z
+            lt = h * 0.25
+            parts = [(lo + pw / 2, pw, mn.z + (h - lt) / 2, h - lt), (hi - pw / 2, pw, mn.z + (h - lt) / 2, h - lt),
+                     ((lo + hi) / 2, span, mx.z - lt / 2, lt)]
+            for i, (c0, w, cz, hz) in enumerate(parts):
+                if along_x:
+                    _proxy(f'{lab}_{i}', xf, unreal.Vector(c0, dc, cz), unreal.Vector(w, dep, hz), mat)
+                else:
+                    _proxy(f'{lab}_{i}', xf, unreal.Vector(dc, c0, cz), unreal.Vector(dep, w, hz), mat)
                 n += 1
             continue
         center = unreal.Vector((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, (mn.z + mx.z) / 2)

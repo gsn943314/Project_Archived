@@ -189,6 +189,26 @@ def _nav_watchdog(world):
         _S['nav_fixes'] = 0
 
 
+def _art_watch(t):
+    """Final-render art moved / rotated / scaled / added / deleted -> regenerate the GB_ grey boxes once it
+    has been still for a moment, so the grey view (and PLAY's edit phase) always matches the art."""
+    if t - _S.get('art_check', 0.0) < 0.5:
+        return
+    _S['art_check'] = t
+    import view_mode as V
+    sig = tuple(sorted((a.get_actor_label(),) + _sig(a) for a in T._actors()
+                       if isinstance(a, unreal.StaticMeshActor) and V.is_art(a)))
+    if _S.get('art_sig') is None or _S.get('art_world') != _S['world']:
+        _S['art_sig'], _S['art_world'], _S['art_moved'] = sig, _S['world'], None
+        return
+    if sig != _S['art_sig']:
+        _S['art_sig'], _S['art_moved'] = sig, t
+    elif _S.get('art_moved') and t - _S['art_moved'] >= REBUILD_DELAY:
+        _S['art_moved'] = None
+        n = V.sync_greybox()
+        unreal.log(f'[LiveEdit] art changed - {n} grey boxes regenerated')
+
+
 def _tick(dt):
     if not _S['enabled'] or _S['busy']:
         return
@@ -241,6 +261,7 @@ def _tick(dt):
             _S['dirty'] = False
             _S['moved'] = {}
             _rebuild()
+        _art_watch(t)
         _draw_warnings(world)
         if not _S['dirty']:
             _nav_watchdog(world)
