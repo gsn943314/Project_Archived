@@ -31,6 +31,15 @@ tags: [Experiment, AI, Active]
 | `Lvl_BlockTutorial_V5`<br>![](Docs/overviews/Lvl_BlockTutorial_V5.png) | `Lvl_Terraces`<br>![](Docs/overviews/Lvl_Terraces.png) |
 | `Lvl_PathfindingPuzzle`<br>![](Docs/overviews/Lvl_PathfindingPuzzle.png) | |
 
+## 開始畫面與設定
+
+- 地圖 `Lvl_MainMenu`（打包後的預設地圖）：開始新遊戲、關卡選擇（7 個關卡）、設定、離開。
+- 設定：主音量 / 背景音樂 / 音效（Sound Class `SC_Music`、`SC_SFX`，Sound Mix `SMix_Settings`）、語言（English / 繁體中文）、快捷鍵說明。設定存在 SaveGame `PuzzleSettings`，由 `BP_PuzzleGameInstance` 讀寫並在每個關卡開始時套用。
+- 遊戲中按 `Esc` 回到主選單。PLAY 時鏡頭為第三人稱跟在角色後方。
+- 在 Editor 測試：打開 `Lvl_MainMenu` 再按 Play。
+
+![](Docs/main_menu.png)
+
 ## 關卡編輯工具（Editor 模式，不用按 Play）
 
 由 `Content/Python/puzzle_level_tools.py`、`live_edit.py` 提供，選單 **Puzzle** 與工具列按鈕（有圖示與文字）。關卡由 `Editor` 資料夾裡的標記描述。
