@@ -15,7 +15,8 @@ tags: [Experiment, AI, Active]
 ## 關卡
 
 - `Lvl_BlockTutorial`：方塊教學主關卡
-- `Lvl_BlockTutorial_V2/V3/V4`：隨機生成的同概念版本
+- `Lvl_BlockTutorial_V2`：舊版生成器（來回走道）
+- `Lvl_BlockTutorial_V3/V4/V5`：新版生成器，蜿蜒路徑、約 10 階高低差
 - `Lvl_Terraces`：S 型往上爬，含火 / 霧 / 水 / 船 / 聲音誘餌 / 壓力板 / 門 / 橋
 - `Lvl_PathfindingPuzzle`：最早的平面原型
 
