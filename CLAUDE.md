@@ -17,7 +17,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | `Lvl_BlockTutorial` | 方塊教學（主關卡，手工設計） |
 | `Lvl_BlockTutorial_V2` | 舊版生成器（3 條來回走道、爬 2 階，seed 11） |
 | `Lvl_BlockTutorial_V5_Art` | V5 套用 MegaJam 美術（`/Game/Dev/Meshes`），每階 175 cm（樓梯模型高度壓成 0.5） |
-| `Lvl_Level2` | Level 2（Forgotten Wilds / Hollow Shrine）：2-1 兩條路（旋轉橋 / 水車升降台＋箱子擋野獸）→ Checkpoint → 2-2（旋轉橋、石碑擋守衛、升降平台到 B） |
+| `Lvl_Level2` | Level 2（Forgotten Wilds / Hollow Shrine，`level2_build.py` 生成，改版面改那支檔再 `build()`）：2-1 右邊旋轉橋＋填洞、左邊野獸＋填洞＋水車升降台（箱子擋野獸門）→ Checkpoint → 2-2（填洞、旋轉橋、石碑擋守衛、升降平台到 B）。15×18 格、5 階 |
 | `Lvl_BlockTutorial_V3/V4/V5` | 新版生成器：蜿蜒折線路徑、約 10 階高低差（seed 33/55/77） |
 | `Lvl_Terraces` | S 型往上爬的梯田關，含所有機關 |
 | `Lvl_PathfindingPuzzle` | 最早的平面原型，含所有機關 |
