@@ -120,6 +120,11 @@ def _snap_target(a, kind):
 def _apply_snap(a, kind):
     loc, yaw = _snap_target(a, kind)
     moved = False
+    if kind in ('floor', 'hole'):  # keep the label in sync with the cell it now sits on
+        rc = T.cell_of(loc.x, loc.y, _S['grid'])
+        lab = f"{'Floor' if kind == 'floor' else 'Hole'}_r{rc[0]}_c{rc[1]}"
+        if a.get_actor_label() != lab:
+            a.set_actor_label(lab)
     if (a.get_actor_location() - loc).length() > 0.5:
         a.set_actor_location(loc, False, False)
         moved = True
