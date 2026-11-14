@@ -1,9 +1,11 @@
 """Art pass: dresses a marker-built puzzle level with the MegaJam meshes (/Game/Dev/Meshes).
 
-The grey-box cubes in folder "Maze" stay as the collision / NavMesh geometry; where an art mesh covers a
-cube, the cube is only made invisible. Art actors live in folder "Art", have no collision and never affect
-navigation, so they are rebuilt from scratch every time (Puzzle > Apply Art, or automatically after
-Rebuild on levels whose Editor_Grid has the tag "Art").
+Two views of one level (see view_mode.py): the grey box (folder "Maze" = collision / NavMesh, plus "GB_"
+proxies in "Greybox" generated from the art) and the final render (folder "Art", no collision).
+Generated art carries the tags VisFinal + ArtAuto + Gen:<transform>. Apply Art regenerates only untouched
+ArtAuto pieces: a piece a designer moved / rotated / scaled is locked automatically, a slot whose piece was
+deleted or replaced by hand is never filled again (remembered on the Art_Registry actor), and anything placed
+by hand in "Art" is left alone. Puzzle > Reset Selected Art brings a slot back to the automatic version.
 
   stairs        -> SM_PinkStone01 (2x2x2 cells, the tier height must be 350: Editor_Grid tag TierH:350)
   path floor    -> SM_StonePlatform01 under every walkable cell
@@ -48,8 +50,25 @@ def _mesh(path):
     return m
 
 
-def _place(label, path, cx, cy, z, size, yaw, folder='Art'):
+_CTX = {'skip': set(), 'made': []}
+
+
+def _sig(a):
+    l, r, s = a.get_actor_location(), a.get_actor_rotation(), a.get_actor_scale3d()
+    return f'{l.x:.0f},{l.y:.0f},{l.z:.0f},{r.yaw % 360:.0f},{s.x:.3f},{s.y:.3f},{s.z:.3f}'
+
+
+def _tag_auto(a, label, extra=()):
+    """Generated art: VisFinal (shown in the final view), ArtAuto (may be regenerated) and the generated
+    transform, so a later Apply Art can tell whether a designer has touched it."""
+    a.tags = [unreal.Name(t) for t in ('VisFinal', 'ArtAuto', 'Gen:' + _sig(a)) + tuple(extra)]
+    _CTX['made'].append(label)
+
+
+def _place(label, path, cx, cy, z, size, yaw, folder='Art', extra=()):
     """Spawns `path` so its bounds fill `size` (sx, sy, sz in cm, before yaw), centred on cx, cy, bottom at z."""
+    if label in _CTX['skip']:
+        return None
     m = _mesh(path)
     mn, mx = _SIZE[path]
     ex, ey, ez = mx.x - mn.x, mx.y - mn.y, mx.z - mn.z
@@ -69,11 +88,14 @@ def _place(label, path, cx, cy, z, size, yaw, folder='Art'):
     a.set_actor_scale3d(s)
     a.set_actor_label(label)
     a.set_folder_path(folder)
+    _tag_auto(a, label, extra)
     return a
 
 
 def _place_raw(label, path, x, y, z, yaw, folder='Art'):
     """Spawns `path` unscaled with its pivot at x, y, z."""
+    if label in _CTX['skip']:
+        return None
     a = T._eas().spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(x, y, z), unreal.Rotator(0, 0, yaw))
     smc = a.static_mesh_component
     smc.set_static_mesh(_mesh(path))
@@ -83,6 +105,7 @@ def _place_raw(label, path, x, y, z, yaw, folder='Art'):
     a.set_actor_enable_collision(False)
     a.set_actor_label(label)
     a.set_folder_path(folder)
+    _tag_auto(a, label)
     return a
 
 
@@ -92,13 +115,59 @@ def _set_visible(a, on):
         smc.set_visibility(on, False)
 
 
-def clear_art():
-    for a in list(T._actors()):
-        if T._folder(a) == 'Art':
-            T._eas().destroy_actor(a)
+REGISTRY = 'Art_Registry'
+
+
+def _registry():
     for a in T._actors():
-        if T._folder(a) == 'Maze' and isinstance(a, unreal.StaticMeshActor):
+        if a.get_actor_label() == REGISTRY:
+            return a
+    a = T._eas().spawn_actor_from_class(unreal.TargetPoint, unreal.Vector(0, 0, -5000))
+    a.set_actor_label(REGISTRY)
+    a.set_folder_path('Editor')
+    return a
+
+
+def _grey_only(a):
+    """A grey-box cube covered by art: shown in the grey view only (collision stays on)."""
+    _set_visible(a, True)
+    if 'VisGrey' not in [str(t) for t in a.tags]:
+        a.tags = list(a.tags) + [unreal.Name('VisGrey')]
+
+
+def prepare_art():
+    """Before regenerating: generated pieces a designer moved / rotated / scaled lose ArtAuto (locked, kept);
+    untouched generated pieces are removed to be rebuilt; slots that were generated before but whose piece
+    is gone (deleted or replaced by hand) are remembered and not filled again. Returns the registry actor."""
+    reg = _registry()
+    slots = set(str(t)[5:] for t in reg.tags if str(t).startswith('Slot:'))
+    present, locked, regen = set(), [], set()
+    for a in list(T._actors()):
+        if T._folder(a) != 'Art':
+            continue
+        lab = a.get_actor_label()
+        tags = [str(t) for t in a.tags]
+        if 'ArtAuto' in tags:
+            gen = next((t[4:] for t in tags if t.startswith('Gen:')), None)
+            if gen is not None and gen != _sig(a):    # touched by a designer: lock it
+                a.tags = [unreal.Name(t) for t in tags if t != 'ArtAuto' and not t.startswith('Gen:')]
+                locked.append(lab)
+                present.add(lab)
+            else:                                     # untouched: rebuild it
+                regen.add(lab)
+                T._eas().destroy_actor(a)
+            continue
+        present.add(lab)
+        if 'VisFinal' not in tags:                    # anything placed by hand in "Art" is final-view art
+            a.tags = list(a.tags) + [unreal.Name('VisFinal')]
+    removed = slots - present - regen                 # generated before, now gone: deleted / replaced by hand
+    _CTX['skip'] = (slots & present) | removed
+    _CTX['made'] = []
+    for a in T._actors():                          # grey-only tags are recomputed below
+        if T._folder(a) == 'Maze' and 'VisGrey' in [str(t) for t in a.tags]:
+            a.tags = [t for t in a.tags if str(t) != 'VisGrey']
             _set_visible(a, True)
+    return reg, locked, removed
 
 
 def apply_art(seed=7):
@@ -108,7 +177,7 @@ def apply_art(seed=7):
     nodes, fm, holes, movers = T.read_markers(grid)
     floor, stairs, pits, _c, _w = T.compute_layout(grid, nodes, fm, holes, movers)
     specs, (r0, r1, c0, c1) = T.geometry_specs(floor, pits, stairs, grid)
-    clear_art()
+    reg, locked, removed = prepare_art()
     maze = {a.get_actor_label(): a for a in T._actors() if T._folder(a) == 'Maze'}
     walk = dict(floor)
     walk.update(pits)
@@ -120,10 +189,10 @@ def apply_art(seed=7):
         x, y = T.cell_ctr(rc, grid)
         up = d if h1 > h0 else (-d[0], -d[1])          # direction the stair climbs (row, col)
         yaw = {(0, 1): 0, (1, 0): 90, (0, -1): 180, (-1, 0): 270}[up] + STAIR_YAW
-        _place(f'Art_Stair_r{rc[0]}_c{rc[1]}', STAIR, x, y, min(h0, h1), (C, C, abs(h1 - h0)), yaw)
+        _place(f'Art_Stair_r{rc[0]}_c{rc[1]}', STAIR, x, y, min(h0, h1), (C, C, abs(h1 - h0)), yaw, extra=('NoGreybox',))
         for lab, a in maze.items():
             if lab.startswith(f'Maze_Stair_r{rc[0]}_c{rc[1]}_'):
-                _set_visible(a, False)
+                _grey_only(a)
         n += 1
     # path blocks: a stone platform under every walkable floor cell (grey cube stays below for collision)
     # (the cube is hidden but keeps its collision; platforms stack down to the lowest neighbouring ground)
@@ -134,12 +203,13 @@ def apply_art(seed=7):
         low = min(nb + [h]) - U
         z, k = h, 0
         while z > low and k < 4:
-            _place(f'Art_Path_r{rc[0]}_c{rc[1]}_{k}', PLATFORM, x, y, z - U, (C, C, U), rng.choice((0, 90, 180, 270)))
+            _place(f'Art_Path_r{rc[0]}_c{rc[1]}_{k}', PLATFORM, x, y, z - U, (C, C, U), rng.choice((0, 90, 180, 270)),
+                   extra=('NoGreybox',))
             z -= U
             k += 1
         cube = maze.get(f'Maze_Path_r{rc[0]}_c{rc[1]}')
         if cube:
-            _set_visible(cube, False)
+            _grey_only(cube)
         n += k
     # stone walls only on the open (lower) side of the walkway, like the reference layout: the high side
     # is already closed by the grey terrace. Consecutive edges become one run, filled with unscaled
@@ -272,13 +342,35 @@ def apply_art(seed=7):
             T._eas().destroy_actor(a)
     _place('Art_Portal', PORTAL, x, y, b_t * U, (C * 1.4, C * 0.6, C * 1.0), face)
     n += 1
+    known = set(str(t) for t in reg.tags)
+    reg.tags = list(reg.tags) + [unreal.Name('Slot:' + l) for l in _CTX['made'] if 'Slot:' + l not in known]
+    _CTX['last'] = {'placed': len(_CTX['made']), 'locked': locked, 'removed': sorted(removed)}
+    import view_mode
+    view_mode.sync_greybox()
     unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
-    return n
+    return len(_CTX['made'])
+
+
+def reset_selected_art():
+    """Selected generated pieces (or the slots they came from) go back to the automatic version."""
+    reg = _registry()
+    sel = [a for a in T._eas().get_selected_level_actors() if T._folder(a) == 'Art']
+    labs = set(a.get_actor_label() for a in sel)
+    for a in sel:
+        T._eas().destroy_actor(a)
+    reg.tags = [t for t in reg.tags if str(t)[5:] not in labs]   # forget them -> regenerated as new
+    return apply_art()
 
 
 def apply_from_menu():
     try:
         n = apply_art()
-        unreal.EditorDialog.show_message('Apply Art', f'Placed {n} art meshes (folder "Art").', unreal.AppMsgType.OK)
+        info = _CTX['last']
+        msg = f'Placed {n} generated art meshes (folder "Art").'
+        if info['locked']:
+            msg += f"\n\nNewly locked (you edited them, kept as they are): {len(info['locked'])}"
+        if info['removed']:
+            msg += f"\nSlots you deleted / replaced (not filled again): {len(info['removed'])}"
+        unreal.EditorDialog.show_message('Apply Art', msg, unreal.AppMsgType.OK)
     except Exception as e:
         unreal.EditorDialog.show_message('Apply Art', f'Failed: {e}', unreal.AppMsgType.OK)
