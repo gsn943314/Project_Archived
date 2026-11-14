@@ -7,8 +7,9 @@ Rebuild on levels whose Editor_Grid has the tag "Art").
 
   stairs        -> SM_PinkStone01 (2x2x2 cells, the tier height must be 350: Editor_Grid tag TierH:350)
   path floor    -> SM_StonePlatform01 under every walkable cell
-  path sides    -> only the lower / open side; runs of 3 / 2 / 1 cells use SM_StoneWall01 / StoneWallDecor
-                   (or Damaged) / StoneWallWindow at ~native scale; runs overlap at corners
+  path sides    -> every edge next to a wall cell; runs of 3 / 2 / 1 cells use SM_StoneWall01 / StoneWallDecor /
+                   StoneWallWindow at ~native scale, flush with the walkway; runs overlap at corners
+  stair sides   -> SM_StoneWallDamaged (sloped) over the flat cell + stair cell, outside the stair
   wall tops far from the path get a few SM_StoneCliff01/02
   outer edge    -> SM_StoneWall01 / Damaged / Decor / Window segments, 3 cells long
   point B       -> SM_Portal facing the path
@@ -24,7 +25,8 @@ WALLS = [M + 'SM_StoneWall01', M + 'SM_StoneWall01', M + 'SM_StoneWallDamaged', 
          M + 'SM_StoneWallWindow']
 PORTAL = M + 'SM_Portal'
 PIECES = {3: M + 'SM_StoneWall01', 1: M + 'SM_StoneWallWindow'}   # wall piece per run length (cells)
-PIECES_2 = [M + 'SM_StoneWallDecor', M + 'SM_StoneWallDecor', M + 'SM_StoneWallDamaged']
+PIECES_2 = [M + 'SM_StoneWallDecor']
+RAMP = M + 'SM_StoneWallDamaged'   # sloped wall: the side of a stair (flat cell + stair cell)
 OVERLAP = 60          # runs reach into the corner so two perpendicular walls intersect
 CLIFFS = [M + 'SM_StoneCliff01', M + 'SM_StoneCliff02']
 STAIR_YAW = -90.0     # SM_PinkStone01 climbs towards +Y at yaw 0
@@ -136,17 +138,33 @@ def apply_art(seed=7):
     if _seg:
         portal_edge = (lst[-1][1], _seg[-1][1])
     runs = {}
+    ramp_cover = set()                                  # (cell, side) already covered by a stair ramp wall
+    for rc, (h0, h1, sd) in stairs.items():
+        up = sd if h1 > h0 else (-sd[0], -sd[1])
+        low_cell = (rc[0] - up[0], rc[1] - up[1])
+        for side in ((up[1], up[0]), (-up[1], -up[0])):      # the two sides perpendicular to the climb
+            if (rc[0] + side[0], rc[1] + side[1]) not in wall_tops:
+                continue
+            ramp_cover.add((rc, side))
+            ramp_cover.add((low_cell, side))
+            _mesh(RAMP)
+            mn, mx = _SIZE[RAMP]
+            s_ = 2 * C / (mx.x - mn.x)
+            depth = (mx.y - mn.y) * s_
+            x, y = T.cell_ctr(rc, grid)
+            cx = x - up[1] * C / 2 + side[1] * (C / 2 + depth / 2 - 30)
+            cy = y - up[0] * C / 2 + side[0] * (C / 2 + depth / 2 - 30)
+            yaw = {(0, 1): 0, (1, 0): 90, (0, -1): 180, (-1, 0): 270}[up]   # SM_StoneWallDamaged rises towards +X
+            _place(f'Art_Ramp_r{rc[0]}_c{rc[1]}_{side[0]}{side[1]}', RAMP, cx, cy, min(h0, h1),
+                   (2 * C, depth, (mx.z - mn.z) * s_), yaw)
+            n += 1
     for rc, h in walk.items():
         if rc in stairs:
-            h0, h1, sd = stairs[rc]
-            base, top = min(h0, h1), max(h0, h1)
-        else:
-            sd, base, top = None, h, h
+            continue
+        base = h
         for d in ortho:
             o = (rc[0] + d[0], rc[1] + d[1])
-            if sd and d in (sd, (-sd[0], -sd[1])):
-                continue
-            if o not in wall_tops or wall_tops[o] >= top + 30 or (rc, d) == portal_edge:
+            if o not in wall_tops or (rc, d) == portal_edge or (rc, d) in ramp_cover:
                 continue
             if d[0]:
                 key = ('H', rc[0] + (1 if d[0] > 0 else 0), d[0], base)
@@ -179,7 +197,7 @@ def apply_art(seed=7):
                 length = k * C + (OVERLAP if i == 0 else 0) + (OVERLAP if i == len(parts) - 1 else 0)
                 s = k * C / ex                                     # uniform scale, close to 1
                 along = (a + k / 2) * C + ((-OVERLAP if i == 0 else 0) + (OVERLAP if i == len(parts) - 1 else 0)) / 2
-                across = b * C + sign * 25
+                across = b * C + sign * (ey * s / 2 - 10)       # flush against the walkway edge
                 if axis == 'H':
                     x, y, yaw = grid[0] + along, grid[1] + across, 0
                 else:

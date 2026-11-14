@@ -21,6 +21,7 @@ import unreal
 C = 350.0
 U = 175.0          # tier height of the open level (175, or 350 for art levels: Editor_Grid tag 'TierH:350')
 PIT = 175.0        # hole depth = block height
+OPEN_STAIR_SIDE = True   # lower the camera-side wall next to stairs (grey-box levels)
 BASE = -440.0
 AGGRO = 900.0
 L_SCALE = (3.5, 3.5, 1.75)
@@ -60,8 +61,9 @@ def grid_tier_height(a):
 
 def use_grid(a):
     """Reads the per-level settings stored on the Editor_Grid actor."""
-    global U
+    global U, OPEN_STAIR_SIDE
     U = grid_tier_height(a)
+    OPEN_STAIR_SIDE = 'Art' not in [str(t) for t in a.tags]   # art levels: no lowered wall beside stairs
 
 
 def get_grid():
@@ -71,6 +73,7 @@ def get_grid():
             l = a.get_actor_location()
             return l.x, l.y
     globals()['U'] = 175.0
+    globals()['OPEN_STAIR_SIDE'] = True
     for a in _actors():  # older levels: align to an existing floor tile
         if a.get_actor_label().startswith('Maze_Path_'):
             l = a.get_actor_location()
@@ -295,7 +298,7 @@ def geometry_specs(floor, pits, stairs, grid):
             else:
                 near = min(cells, key=lambda kv: (kv[0][0] - r) ** 2 + (kv[0][1] - c) ** 2)
                 top = near[1] + 60
-            if (r, c) in opened:
+            if (r, c) in opened and OPEN_STAIR_SIDE:
                 top = min(top, opened[(r, c)])
             elif (r, c) in stair_adj:
                 top = max(top, stair_adj[(r, c)] + 60)
