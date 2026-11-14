@@ -155,6 +155,21 @@ def spawn_floor(rc, tier, grid):
                         (2.9, 2.9, 0.08), ('FloorMark',))
 
 
+def spawn_wide(rc, tier, grid):
+    """Widening floor: built exactly like a floor tile (FloorMark), only to make a walkway look wider.
+    Brown tile with a cross bar so it can be told apart from the blue walkable pocket tiles."""
+    x, y = cell_ctr(rc, grid)
+    a = _marker_mesh(f'Wide_r{rc[0]}_c{rc[1]}', 'Editor/Wide', unreal.Vector(x, y, tier * U + 6),
+                     '/Engine/BasicShapes/Cube', '/Game/Project/Art/Materials/Gimmick/MI_G_Wood',
+                     (2.9, 2.9, 0.08), ('FloorMark', 'WideMark'))
+    for i, sc in enumerate(((2.4, 0.35, 0.1), (0.35, 2.4, 0.1))):      # "+" icon on top
+        b = _marker_mesh(f'Wide_r{rc[0]}_c{rc[1]}_icon{i}', 'Editor/Wide', unreal.Vector(x, y, tier * U + 10),
+                         '/Engine/BasicShapes/Cube', '/Game/Project/Art/Materials/Gimmick/MI_G_IconSymbol', sc, ())
+        b.attach_to_actor(a, '', unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD,
+                          unreal.AttachmentRule.KEEP_WORLD, False)
+    return a
+
+
 def spawn_hole(rc, tier, grid):
     x, y = cell_ctr(rc, grid)
     tp = _eas().spawn_actor_from_class(unreal.TargetPoint, unreal.Vector(x, y, tier * U))
@@ -553,6 +568,16 @@ def add_floor():
         loc, _ = _anchor()
         rc, p = _snap(loc, grid)
         a = spawn_floor(rc, tier_of(p.z), grid)
+    _select(a)
+    return a
+
+
+def add_wide():
+    grid = get_grid()
+    with unreal.ScopedEditorTransaction('Add Widening Floor'):
+        loc, _ = _anchor()
+        rc, p = _snap(loc, grid)
+        a = spawn_wide(rc, tier_of(p.z), grid)
     _select(a)
     return a
 
