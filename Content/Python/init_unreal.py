@@ -34,7 +34,7 @@ ENTRIES = [
      "import importlib, puzzle_level_tools as T; importlib.reload(T); T.rebuild_from_menu()", 'Rebuild Level'),
     ('ApplyArt', 'Apply Art (MegaJam meshes)',
      'Dresses the open level with the /Game/Dev/Meshes art: stairs, wall caps, edge walls, portal at B (folder Art)',
-     "import importlib, puzzle_level_tools as T, view_mode as V, puzzle_art as A; importlib.reload(T); importlib.reload(V); importlib.reload(A); A.apply_from_menu()", 'Apply Art'),
+     "import importlib, puzzle_level_tools as T, view_mode as V, puzzle_art as A; importlib.reload(T); importlib.reload(V); importlib.reload(A); A.apply_from_menu()", None),
     ('ViewToggle', 'Toggle Grey Box / Final Render',
      'Switches the editor view between the grey box and the final art (grey proxies are rebuilt from the art)',
      "import importlib, puzzle_level_tools as T, view_mode as V; importlib.reload(T); importlib.reload(V); V.toggle()",
