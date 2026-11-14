@@ -108,8 +108,9 @@ def sync_greybox():
     for a in list(T._actors()):
         if T._folder(a) == FOLDER or 'GreyProxy' in [str(t) for t in a.tags]:
             T._eas().destroy_actor(a)
-    if _grey_is_maze():
-        return _sync_maze_grey()
+    maze = _grey_is_maze()
+    if maze:
+        _sync_maze_grey()       # stairs: the Maze stair cubes are their grey box
     prof = _profiles()
     mat = T._asset(GREY_MAT)
     n = 0
@@ -121,6 +122,8 @@ def sync_greybox():
             a.tags = list(a.tags) + [unreal.Name('VisFinal')]
         mesh = a.static_mesh_component.static_mesh
         if mesh is None or 'NoGreybox' in tags:
+            continue
+        if maze and (mesh.get_name() in STAIR_ART or 'Platform' in mesh.get_name()):
             continue
         p = prof.get(mesh.get_name(), {'shape': 'Box', 'pad': 0.0})
         shape = p['shape'].lower()
