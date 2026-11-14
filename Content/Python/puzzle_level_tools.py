@@ -492,11 +492,20 @@ def rebuild(save=True, navmesh=True):
 
 # ------------------------------------------------------------------ menu actions
 def _anchor():
-    """Location to spawn a new marker: next to the selected actor, else in front of the viewport camera."""
+    """Location to spawn a new marker.
+    Clicked (selected) floor / wall / art: right on top of it (centre of its top face).
+    Selected marker (path node, tile, hole, block): the next cell beside it (e.g. insert after a node).
+    Nothing selected: where the viewport camera looks at the ground."""
     sel = _eas().get_selected_level_actors()
     if sel:
-        l = sel[0].get_actor_location()
-        return unreal.Vector(l.x + C, l.y, l.z), sel[0]
+        a = sel[0]
+        tags = [str(t) for t in a.tags]
+        marker = _folder(a).startswith('Editor') or _folder(a) == 'Blocks' or 'PathNode' in tags or 'FloorMark' in tags
+        if not marker:
+            o, e = a.get_actor_bounds(False)
+            return unreal.Vector(o.x, o.y, o.z + e.z), a
+        l = a.get_actor_location()
+        return unreal.Vector(l.x + C, l.y, l.z), a
     loc, rot = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_level_viewport_camera_info()
     f = rot.get_forward_vector()
     t = (0 - loc.z) / f.z if f.z < -0.05 else 2500
