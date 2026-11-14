@@ -70,11 +70,46 @@ def _proxy(label, xf, center, ext, mat):
     return a
 
 
+STAIR_ART = ('SM_PinkStone01',)
+
+
+def _grey_is_maze():
+    """Editor_Grid tag `GreyMaze`: hand-placed art levels (e.g. Camp) — the Maze terrain itself is the grey
+    box (no GB_ proxies); Maze stair cubes under stair art are hidden in the final render."""
+    g = [a for a in T._actors() if a.get_actor_label() == 'Editor_Grid']
+    return bool(g) and 'GreyMaze' in [str(t) for t in g[0].tags]
+
+
+def _sync_maze_grey():
+    stairs = []
+    for a in T._actors():
+        if is_art(a) and isinstance(a, unreal.StaticMeshActor):
+            if 'VisFinal' not in [str(t) for t in a.tags]:
+                a.tags = list(a.tags) + [unreal.Name('VisFinal')]
+            m = a.static_mesh_component.static_mesh
+            if m and m.get_name() in STAIR_ART:
+                o, e = a.get_actor_bounds(False)
+                stairs.append((o, e))
+    n = 0
+    for a in T._actors():
+        if T._folder(a) != 'Maze' or not a.get_actor_label().startswith('Maze_Stair'):
+            continue
+        p = a.get_actor_bounds(False)[0]
+        hit = any(abs(p.x - o.x) <= e.x + 10 and abs(p.y - o.y) <= e.y + 10 for o, e in stairs)
+        tags = [t for t in a.tags if str(t) != 'VisGrey'] + ([unreal.Name('VisGrey')] if hit else [])
+        a.tags = tags
+        n += hit
+    set_view(_S['final'])
+    return n
+
+
 def sync_greybox():
     """Rebuilds every GB_ proxy from the art as it is now. Returns the number of proxies."""
     for a in list(T._actors()):
         if T._folder(a) == FOLDER or 'GreyProxy' in [str(t) for t in a.tags]:
             T._eas().destroy_actor(a)
+    if _grey_is_maze():
+        return _sync_maze_grey()
     prof = _profiles()
     mat = T._asset(GREY_MAT)
     n = 0
