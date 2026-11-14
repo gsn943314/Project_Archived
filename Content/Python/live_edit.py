@@ -74,6 +74,7 @@ def _refresh(world):
         _S['grid'] = None
         _S['tracked'] = []
         return
+    T.use_grid(grid_actor)
     l = grid_actor.get_actor_location()
     _S['grid'] = (l.x, l.y)
     old = set(id(a) for a, _ in _S['tracked'])
@@ -86,7 +87,7 @@ def _refresh(world):
 
 def _snap_axis(v, origin, size):
     """Centre of a box of `size` cm snapped so its edges sit on the 175 cm half-cell lines."""
-    step = T.C if size >= T.C - 1 else T.U
+    step = T.C if size >= T.C - 1 else T.C / 2
     return origin + size / 2 + round((v - origin - size / 2) / step) * step
 
 

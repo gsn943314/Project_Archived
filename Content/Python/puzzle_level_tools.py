@@ -19,7 +19,8 @@ import math
 import unreal
 
 C = 350.0
-U = 175.0
+U = 175.0          # tier height of the open level (175, or 350 for art levels: Editor_Grid tag 'TierH:350')
+PIT = 175.0        # hole depth = block height
 BASE = -440.0
 AGGRO = 900.0
 L_SCALE = (3.5, 3.5, 1.75)
@@ -49,11 +50,27 @@ def _folder(a):
 
 
 # ------------------------------------------------------------------ grid
+def grid_tier_height(a):
+    for t in a.tags:
+        t = str(t)
+        if t.startswith('TierH:'):
+            return float(t[6:])
+    return 175.0
+
+
+def use_grid(a):
+    """Reads the per-level settings stored on the Editor_Grid actor."""
+    global U
+    U = grid_tier_height(a)
+
+
 def get_grid():
     for a in _actors():
         if a.get_actor_label() == GRID_LABEL:
+            use_grid(a)
             l = a.get_actor_location()
             return l.x, l.y
+    globals()['U'] = 175.0
     for a in _actors():  # older levels: align to an existing floor tile
         if a.get_actor_label().startswith('Maze_Path_'):
             l = a.get_actor_location()
@@ -238,9 +255,10 @@ def geometry_specs(floor, pits, stairs, grid):
         specs[f'Maze_Path_r{rc[0]}_c{rc[1]}'] = (x, y, C, C, h, MF, ())
     for rc, h in pits.items():
         x, y = cell_min(rc, grid)
-        specs[f'Maze_Pit_r{rc[0]}_c{rc[1]}'] = (x, y, C, C, h - U, MP, ())
+        specs[f'Maze_Pit_r{rc[0]}_c{rc[1]}'] = (x, y, C, C, h - PIT, MP, ())
     opened = {}
-    n = 7
+    # 350 cm tiers make 45-degree stairs: steps must be <= 10 cm or the NavMesh (19 cm voxels) sees 50 cm jumps
+    n = 7 if U <= 175 else int(round(U / 10.0))
     for rc, (h0, h1, d) in stairs.items():
         x, y = cell_min(rc, grid)
         for k in range(n):
@@ -380,7 +398,7 @@ def compute_layout(grid, nodes, floor_marks, holes, movers):
 
 def ground_z(rc, floor, stairs, pits):
     if rc in pits:
-        return pits[rc] - U
+        return pits[rc] - PIT
     if rc in stairs:
         return max(stairs[rc][:2])
     return floor.get(rc)
