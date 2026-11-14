@@ -196,6 +196,12 @@ def _art_watch(t):
         return
     _S['art_check'] = t
     import view_mode as V
+    for a in T._actors():                 # block art (ArtCrate_*) always sits exactly on its block
+        if a.get_actor_label().startswith('ArtCrate_'):
+            b = a.get_attach_parent_actor()
+            if b and (a.get_actor_location() - b.get_actor_location()).length() > 1.0:
+                a.set_actor_location(b.get_actor_location(), False, False)
+                a.set_actor_rotation(b.get_actor_rotation(), False)
     sig = tuple(sorted((a.get_actor_label(),) + _sig(a) for a in T._actors()
                        if isinstance(a, unreal.StaticMeshActor) and V.is_art(a)))
     if _S.get('art_sig') is None or _S.get('art_world') != _S['world']:
