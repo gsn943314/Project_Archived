@@ -201,6 +201,9 @@ def apply_art(seed=7):
     pr = (b_rc[0] + d[0], b_rc[1] + d[1])
     x, y = T.cell_ctr(pr, grid)
     face = {(0, 1): 180, (1, 0): 270, (0, -1): 0, (-1, 0): 90}[d] + PORTAL_YAW  # face -d (towards the path)
+    for a in list(T._actors()):                   # keep the way into the portal open
+        if a.get_actor_label() == f'Art_Side_r{b_rc[0]}_c{b_rc[1]}_{d[0]}{d[1]}':
+            T._eas().destroy_actor(a)
     _place('Art_Portal', PORTAL, x, y, b_t * U, (C * 1.4, C * 0.6, C * 1.0), face)
     n += 1
     unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
