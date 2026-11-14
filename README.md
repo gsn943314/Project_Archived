@@ -31,6 +31,22 @@ tags: [Experiment, AI, Active]
 | `Lvl_BlockTutorial_V5`<br>![](Docs/overviews/Lvl_BlockTutorial_V5.png) | `Lvl_Terraces`<br>![](Docs/overviews/Lvl_Terraces.png) |
 | `Lvl_PathfindingPuzzle`<br>![](Docs/overviews/Lvl_PathfindingPuzzle.png) | |
 
+## 關卡編輯工具（Editor 模式，不用按 Play）
+
+由 `Content/Python/puzzle_level_tools.py` 提供，選單 **Puzzle** 與工具列按鈕。關卡由 `Editor` 資料夾裡的標記描述，改完標記按 **Rebuild Level** 就會重蓋地形並存檔。
+
+| 標記 | 外觀 | 作用 |
+|---|---|---|
+| `PathA_00, PathA_01…` | 綠色發光球 | 主路徑，依編號順序連成走道（先沿 X 再沿 Y）。**拖動**改路線；**上下移動**（每 175 cm 一階）會在走道上自動長樓梯 |
+| `PathB_…`、`PathC_…` | 同上 | 支線（例如分岔的安全繞路） |
+| `Floor_*` | 藍色薄片 | 額外的一格地面／凹槽 |
+| `Hole_*` | Target Point | 往下凹的洞，要用方塊填 |
+| 紫色方塊、紅色敵人 | 直接拖 | 放在牆上時，Rebuild 會自動在下面挖一格凹槽 |
+
+按鈕：`Path Node`（選取某個路徑點時插在它後面）、`Floor`、`Hole`、`Block`、`Enemy`、`Rebuild Level`；選單另有 Add Branch、Add Thin Block。Point A 放在 PathA 第一個點、Point B 放在最後一個點。
+
+![](Docs/editor_markers.png)
+
 ## 操作（PIE 編輯階段）
 
 | 操作 | 功能 |

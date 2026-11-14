@@ -17,6 +17,7 @@ Usage (editor): open a level whose name contains "BlockTutorial", then
 import math
 import random
 import unreal
+import puzzle_level_tools as T
 
 C = 350.0          # cell size (2 units)
 U = 175.0          # unit / tier height
@@ -229,16 +230,6 @@ def generate(seed=None):
     world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
     if 'BlockTutorial' not in world.get_path_name():
         raise RuntimeError('Open a BlockTutorial level first (this regenerates the open level).')
-    for a in list(eas.get_all_level_actors()):
-        if str(a.get_folder_path()) in ('Maze', 'Blocks', 'Gimmicks', 'Hints') and a.get_actor_label() != 'Maze_Backdrop':
-            eas.destroy_actor(a)
-        elif a.get_actor_label().startswith('Maze_Pillar'):
-            eas.destroy_actor(a)
-
-    cube = unreal.load_asset('/Game/LevelPrototyping/Meshes/SM_Cube')
-    m_floor = unreal.load_asset('/Game/Project/Art/Materials/MI_MazeFloor')
-    m_wall = unreal.load_asset('/Game/Project/Art/Materials/MI_MazeWall')
-    m_pit = unreal.load_asset('/Game/Project/Art/Materials/MI_MazeBackdrop')
     ob = unreal.load_asset('/Game/Project/Programming/Blueprints/Pathfinding/BP_EditableObstacle').generated_class()
     en = unreal.load_asset('/Game/Project/Programming/Blueprints/Pathfinding/BP_EnemyBlock').generated_class()
 
@@ -246,16 +237,6 @@ def generate(seed=None):
     def ctr(rc): x, y = mn(rc); return x + C / 2, y + C / 2
     def wvec(d): return d[1], d[0]                       # (dr, dc) -> world (x, y)
     def yaw_thin(d): return 0 if d[1] != 0 else 90       # M block is thin along local X
-
-    def box(label, x0, y0, sx, sy, top, mat, tags=()):
-        a = eas.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(x0, y0, BASE))
-        smc = a.static_mesh_component
-        smc.set_static_mesh(cube)
-        smc.set_material(0, mat)
-        a.set_actor_scale3d(unreal.Vector(sx / 100, sy / 100, (top - BASE) / 100))
-        a.set_actor_label(label)
-        a.set_folder_path('Maze')
-        a.tags = [unreal.Name(t) for t in tags]
 
     floor, pits, blocks, sol, hints = {}, {}, [], {}, []
     for i, rc in enumerate(path):
@@ -319,48 +300,36 @@ def generate(seed=None):
     for rc in pits:
         floor.pop(rc, None)
 
-    lvl = dict(floor)
-    lvl.update(pits)
-    for j, (h0, h1) in stairs.items():
-        lvl[path[j]] = max(h0, h1) * U
+    # ---- write the editable markers, then build the geometry from them (same code as Rebuild)
+    T.clear_all()
+    grid = (X0, Y0)
+    T.set_grid(X0, Y0)
+    n = len(path)
+    keep = {0, n - 1}
+    for i in range(1, n - 1):
+        if dirs[i] != dirs[i + 1]:
+            keep.add(i)                      # corners
+    for j in stairs:
+        keep.update((j - 1, j + 1))          # a node on each side of a stair fixes its position
+    chain_cells = set(path)
+    for k, i in enumerate(sorted(keep)):
+        T.spawn_node('A', k, path[i], hs[i], grid)
+    for name, i, w, s in mods:
+        if name != 'Fork':
+            continue
+        d = dirs[i]
+        perp = (d[1] * s, -d[0] * s)
+        pts = [path[i], (path[i][0] + 2 * perp[0], path[i][1] + 2 * perp[1]),
+               (path[i + 6][0] + 2 * perp[0], path[i + 6][1] + 2 * perp[1]), path[i + 6]]
+        for k, rc in enumerate(pts):
+            T.spawn_node('B', k, rc, hs[i], grid)
+        for p0, p1 in zip(pts, pts[1:]):
+            chain_cells.update(c for c, _d in T.route(p0, p1))
     for rc, h in floor.items():
-        x, y = mn(rc); box(f'Maze_Path_r{rc[0]}_c{rc[1]}', x, y, C, C, h, m_floor)
+        if rc not in chain_cells:
+            T.spawn_floor(rc, int(round(h / U)), grid)
     for rc, h in pits.items():
-        x, y = mn(rc); box(f'Maze_Pit_r{rc[0]}_c{rc[1]}', x, y, C, C, h - U, m_pit)
-        tp = eas.spawn_actor_from_class(unreal.TargetPoint, unreal.Vector(x + C / 2, y + C / 2, h))
-        tp.set_actor_label(f'Hole_r{rc[0]}_c{rc[1]}'); tp.tags = [unreal.Name('Hole')]; tp.set_folder_path('Maze')
-    opened = {}
-    n = 7
-    for j, (h0, h1) in stairs.items():
-        rc = path[j]; d = dirs[j]
-        x, y = mn(rc)
-        for k in range(n):
-            t = k if (d[0] + d[1]) > 0 else n - 1 - k
-            top = (h0 + (h1 - h0) * (k + 1) / n) * U
-            if d[1] != 0:
-                box(f'Maze_Stair_r{rc[0]}_c{rc[1]}_s{k}', x + t * C / n, y, C / n, C, top, m_floor)
-            else:
-                box(f'Maze_Stair_r{rc[0]}_c{rc[1]}_s{k}', x, y + t * C / n, C, C / n, top, m_floor)
-        # keep the camera-facing (-X / -Y) side of every stair open
-        side = (-1, 0) if d[1] != 0 else (0, -1)
-        for kk in (-1, 0, 1):
-            o = (rc[0] + side[0] + d[0] * kk, rc[1] + side[1] + d[1] * kk)
-            opened[o] = min(opened.get(o, 1e9), min(h0, h1) * U - 60)
-
-    cells = list(lvl.items())
-    for r in range(ROWS):
-        for c in range(COLS):
-            if (r, c) in lvl:
-                continue
-            nb = [lvl[(r + dr, c + dc)] for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (r + dr, c + dc) in lvl]
-            if nb:
-                top = min(nb) + 60            # walls drop to the lower neighbour -> terraces
-            else:
-                near = min(cells, key=lambda kv: (kv[0][0] - r) ** 2 + (kv[0][1] - c) ** 2)
-                top = near[1] + 60
-            if (r, c) in opened:
-                top = min(top, opened[(r, c)])
-            x, y = mn((r, c)); box(f'Maze_Wall_r{r}_c{c}', x, y, C, C, top, m_wall, ('Wall',))
+        T.spawn_hole(rc, int(round(h / U)), grid)
 
     for label, cls, (x, y, z), scale, yaw in blocks:
         a = eas.spawn_actor_from_class(cls, unreal.Vector(x, y, z), unreal.Rotator(0, 0, yaw))
@@ -372,13 +341,6 @@ def generate(seed=None):
 
     actors = {a.get_actor_label(): a for a in eas.get_all_level_actors()}
     sx, sy = ctr(path[0])
-    actors['PointA_PathfindingCharacter'].set_actor_location(unreal.Vector(sx, sy, hs[0] * U + 100), False, False)
-    bx, by = ctr(path[-1])
-    actors['PointB_Target'].set_actor_location(unreal.Vector(bx, by, hs[-1] * U), False, False)
-    top_h = max(hs) * U
-    nav = actors['NavMeshBoundsVolume_Puzzle']
-    nav.set_actor_location(unreal.Vector(0, 0, top_h / 2), False, False)
-    nav.set_actor_scale3d(unreal.Vector(COLS * C / 200 + 2, ROWS * C / 200 + 2, (top_h + 1400) / 200))
 
     look = unreal.Vector(sx + 1400, sy + 700, hs[0] * U)
     cam_loc = unreal.Vector(look.x - 1300, look.y - 2400, look.z + 2500)
@@ -400,11 +362,10 @@ def generate(seed=None):
             tr.set_material(0, tmat)
         t.set_actor_label(f'Hint_{i + 1}'); t.set_folder_path('Hints')
 
-    # Rebuild the NavMesh for the new layout; a stale RecastNavMesh leaves the character with no path
-    unreal.SystemLibrary.execute_console_command(unreal.EditorLevelLibrary.get_editor_world(), 'BUILDPATHS')
+    res = T.rebuild(save=False)          # walls / floors / stairs / pits, Point A/B, NavMesh
     unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
     unreal.log(f'[BlockTutorialGen] seed={seed} size={COLS}x{ROWS} tiers={max(hs)}')
-    return {'seed': seed, 'solution': sol, 'tiers': max(hs), 'size': (COLS, ROWS), 'length': len(path)}
+    return {'seed': seed, 'solution': sol, 'tiers': max(hs), 'warnings': res['warnings'], 'size': (COLS, ROWS), 'length': len(path)}
 
 
 def generate_from_menu():
