@@ -254,10 +254,11 @@ def apply_art(seed=7):
                 yaw = WALL_YAW + 90
             _place(f'Art_Edge_{side}_{fixed}_{i}', rng.choice(WALLS), x, y, max(tops), (len(seg) * C, 120, U), yaw)
             n += 1
-    edge('N', list(range(c0, c1 + 1)), r0)
-    edge('S', list(range(c0, c1 + 1)), r1)
-    edge('W', list(range(r0, r1 + 1)), c0)
-    edge('E', list(range(r0, r1 + 1)), c1)
+    if not T.ISLAND:                                # island levels: terrain is cut away at the rim
+        edge('N', list(range(c0, c1 + 1)), r0)
+        edge('S', list(range(c0, c1 + 1)), r1)
+        edge('W', list(range(r0, r1 + 1)), c0)
+        edge('E', list(range(r0, r1 + 1)), c1)
     # portal at point B, one cell past the end of the path, facing back along it
     lst = nodes['A']
     (_i, b_rc, b_t, _l), prev = lst[-1], lst[-2][1]
