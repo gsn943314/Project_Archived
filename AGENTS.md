@@ -73,7 +73,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 
 ## 選單 / 設定（`/Game/Project/Programming/Blueprints/Menu/`）
 
-- `BP_PuzzleGameInstance`：MasterVolume / MusicVolume / SfxVolume / Language（0 英文、1 繁中），`LoadSettings`、`SaveSettings`（slot `PuzzleSettings`）、`ApplyAudio`。
+- `BP_PuzzleGameInstance`：MasterVolume / MusicVolume / SfxVolume / Language（0 英文、1 繁中、2 簡中，語言按鈕循環切換），`LoadSettings`、`SaveSettings`（slot `PuzzleSettings`）、`ApplyAudio`。
 - `BP_MenuPlayerController`：建立 `WBP_MainMenu`、綁定按鈕、`ShowPanel`、`UpdateTexts`（中英文字串都在這裡）。新增關卡要加按鈕 `BtnLvlN` 與事件 `OnLvlN`。
 - `BP_PathfindingPlayerController` BeginPlay 會套用音量；`Esc` 回主選單。
 - 角色 `FollowCameraArm`：第三人稱（長 520、俯角 20°、有延遲平滑）。
