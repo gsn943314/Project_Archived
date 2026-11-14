@@ -400,6 +400,11 @@ def compute_layout(grid, nodes, floor_marks, holes, movers):
         if prc not in stairs:
             floor.setdefault(prc, pt * U)
         for _i, rc, t, lab in lst[1:]:
+            if lab.endswith('J'):       # 'jump' node (e.g. top of a lift): not connected to the previous node
+                if rc not in stairs:
+                    floor[rc] = t * U
+                prc, pt, plab = rc, t, lab
+                continue
             seg = route(prc, rc)
             delta = t - pt
             m = abs(delta)

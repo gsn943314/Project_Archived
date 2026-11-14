@@ -17,6 +17,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | `Lvl_BlockTutorial` | 方塊教學（主關卡，手工設計） |
 | `Lvl_BlockTutorial_V2` | 舊版生成器（3 條來回走道、爬 2 階，seed 11） |
 | `Lvl_BlockTutorial_V5_Art` | V5 套用 MegaJam 美術（`/Game/Dev/Meshes`），每階 175 cm（樓梯模型高度壓成 0.5） |
+| `Lvl_Level2` | Level 2（Forgotten Wilds / Hollow Shrine）：2-1 兩條路（旋轉橋 / 水車升降台＋箱子擋野獸）→ Checkpoint → 2-2（旋轉橋、石碑擋守衛、升降平台到 B） |
 | `Lvl_BlockTutorial_V3/V4/V5` | 新版生成器：蜿蜒折線路徑、約 10 階高低差（seed 33/55/77） |
 | `Lvl_Terraces` | S 型往上爬的梯田關，含所有機關 |
 | `Lvl_PathfindingPuzzle` | 最早的平面原型，含所有機關 |
@@ -31,6 +32,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | `BP_EditableObstacle` | 可拖曳方塊（紫色） |
 | `BP_EnemyBlock` | 敵人方塊（紅色），PLAY 時若在路上會變成 `BP_EnemyChaser`；`AggroRadius` 0 = 永遠追 |
 | `BP_EnemyChaser` | 追擊者（速度 620），碰到主角 → `OnCaught` |
+| `BP_Mechanism` | Level 2 機關（tag `Mechanism`，編輯時點一下觸發、不能拖）：`Kind` 0 = 升降台（點擊開 / 關；開著時 PLAY 中角色停在上面就升 `Travel` cm，到頂再 `StartRun`；回編輯模式 `ResetMech` 降回原位），1 = 旋轉橋（每點一次轉 90°） |
 | `BP_Gimmick` | 機關，`Kind`: 0 火 / 1 霧 / 2 水 / 3 聲音誘餌 / 4 壓力板 / 5 門 / 6 橋；壓力板與門/橋用相同 `LinkId` 連動 |
 
 Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED。
@@ -54,6 +56,8 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 
 - `Content/Python/puzzle_level_tools.py`：`rebuild()` 讀取 `Editor` 資料夾的標記（`PathNode` tag 的 `Path<鏈>_<編號>` 球、`FloorMark` 藍片、`Hole` TargetPoint、`Blocks` 裡的方塊/敵人）重建 `Maze` 資料夾的地形，並移動 Point A/B、調整 NavMesh、`BUILDPATHS`、存檔。
 - **加寬地板**（工具列 **Wide**，`add_wide`）：單一棕色方塊標記（`Editor/Wide`，tag `FloorMark` + `WideMark`），地形和一般 Floor 一樣，用來讓走道看起來更寬。
+- **不相連的節點**：路徑點名稱結尾加 `J`（例如 `PathA_07J`）＝不和上一個節點連成走道（升降台頂端用）。
+- **Checkpoint**：tag `Checkpoint` 的 actor；角色經過（2D 260 cm 內）時把它存成新的起點，被抓或 RESET 後從這裡重來（`BP_PathfindingCharacter` Tick）。
 - 相鄰兩個節點高度不同 → 中間自動放樓梯（需要足夠的直線格，不夠會出現警告）。方塊/敵人在牆上 → 自動挖凹槽。
 - 格子原點存在 `Editor_Grid` actor。生成器也是先放標記再呼叫 `rebuild()`，所以 V3/V4/V5 與新生成的關卡都能直接編輯；`Lvl_BlockTutorial`、`V2` 沒有標記。
 - 地形 actor（`Maze` 資料夾）由 Rebuild 管理（依 label 增量更新），不要手動改它們，改標記就好。
