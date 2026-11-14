@@ -24,7 +24,7 @@ if _S is None:
     _S = {'enabled': True, 'handle': None}
     builtins._puzzle_live_state = _S
 _S.update(last=0.0, refresh=0.0, world=None, grid=None, tracked=[], sig={}, moved={}, dirty=False,
-          layout=None, warns=[], warn_drawn=0.0, busy=False)
+          layout=None, warns=[], warn_drawn=0.0, busy=False, nav_check=0.0, nav_fixes=0)
 
 
 def _now():
@@ -164,6 +164,30 @@ def _rebuild():
         unreal.log_warning('[LiveEdit] ' + ' | '.join(r['warnings']))
 
 
+def _nav_watchdog(world):
+    """An empty NavMesh (stale data, or a BUILDPATHS skipped while the level was loading) leaves the
+    character with a 0-point path. Every few seconds check a short path from Point A and rebuild if empty."""
+    t = _now()
+    if t - _S['nav_check'] < 3.0:
+        return
+    _S['nav_check'] = t
+    nodes = T.read_markers(_S['grid'])[0].get('A', [])
+    if len(nodes) < 2:
+        return
+    x0, y0 = T.cell_ctr(nodes[0][1], _S['grid'])
+    x1, y1 = T.cell_ctr(nodes[1][1], _S['grid'])
+    a = unreal.Vector(x0, y0, nodes[0][2] * T.U + 90)
+    b = unreal.Vector(x1, y1, nodes[1][2] * T.U + 90)
+    p = unreal.NavigationSystemV1.find_path_to_location_synchronously(world, a, b)
+    if p is None or len(p.path_points) == 0:
+        if _S['nav_fixes'] < 5:
+            _S['nav_fixes'] += 1
+            unreal.log_warning('[LiveEdit] NavMesh is empty - rebuilding paths')
+            unreal.SystemLibrary.execute_console_command(world, 'BUILDPATHS')
+    else:
+        _S['nav_fixes'] = 0
+
+
 def _tick(dt):
     if not _S['enabled'] or _S['busy']:
         return
@@ -217,6 +241,8 @@ def _tick(dt):
             _S['moved'] = {}
             _rebuild()
         _draw_warnings(world)
+        if not _S['dirty']:
+            _nav_watchdog(world)
     except Exception as e:
         unreal.log_warning(f'[LiveEdit] {e}')
     finally:

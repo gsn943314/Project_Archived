@@ -98,15 +98,24 @@ def _marker_mesh(label, folder, loc, mesh, mat, scale, tags):
     m = unreal.load_asset(mat)
     if m:
         smc.set_material(0, m)
-    smc.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
-    smc.set_editor_property('can_ever_affect_navigation', False)
     smc.set_editor_property('cast_shadow', False)
+    make_ghost(a)
     a.set_actor_scale3d(unreal.Vector(*scale))
     a.set_actor_hidden_in_game(True)
     a.set_actor_label(label)
     a.set_folder_path(folder)
     a.tags = [unreal.Name(t) for t in tags]
     return a
+
+
+def make_ghost(a):
+    """Markers must never block the character or the NavMesh (editor-only helpers)."""
+    smc = a.static_mesh_component
+    smc.set_collision_profile_name('NoCollision')
+    smc.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    smc.set_editor_property('can_ever_affect_navigation', False)
+    a.set_actor_enable_collision(False)
+    a.set_actor_hidden_in_game(True)
 
 
 def spawn_node(chain, idx, rc, tier, grid):
@@ -162,6 +171,9 @@ def read_markers(grid):
         lab = a.get_actor_label()
         tags = [str(t) for t in a.tags]
         l = a.get_actor_location()
+        if ('PathNode' in tags or 'FloorMark' in tags) and isinstance(a, unreal.StaticMeshActor) \
+                and a.get_actor_enable_collision():
+            make_ghost(a)
         if 'PathNode' in tags:
             k = _node_key(a)
             if k:
@@ -243,6 +255,14 @@ def geometry_specs(floor, pits, stairs, grid):
         for kk in (-1, 0, 1):
             o = (rc[0] + side[0] + d[0] * kk, rc[1] + side[1] + d[1] * kk)
             opened[o] = min(opened.get(o, 1e9), min(h0, h1) - 60)
+    # walls touching a stair must rise above its top step, otherwise the middle steps line up with
+    # the wall tops and the NavMesh lets the character walk off the stairs onto the walls
+    stair_adj = {}
+    for rc, (h0, h1, _d) in stairs.items():
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                o = (rc[0] + dr, rc[1] + dc)
+                stair_adj[o] = max(stair_adj.get(o, -1e9), max(h0, h1))
     rs = [rc[0] for rc in lvl]
     cs = [rc[1] for rc in lvl]
     r0, r1, c0, c1 = min(rs) - 2, max(rs) + 2, min(cs) - 2, max(cs) + 2
@@ -259,6 +279,8 @@ def geometry_specs(floor, pits, stairs, grid):
                 top = near[1] + 60
             if (r, c) in opened:
                 top = min(top, opened[(r, c)])
+            elif (r, c) in stair_adj:
+                top = max(top, stair_adj[(r, c)] + 60)
             x, y = cell_min((r, c), grid)
             specs[f'Maze_Wall_r{r}_c{c}'] = (x, y, C, C, top, MW, ('Wall',))
     return specs, (r0, r1, c0, c1)
