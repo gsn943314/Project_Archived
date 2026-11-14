@@ -71,6 +71,22 @@ def _proxy(label, xf, center, ext, mat):
 
 
 STAIR_ART = ('SM_PinkStone01',)
+# meshes with loose rubble scattered around the foot: the grey box only frames the main body
+BODY_ONLY = ('SM_StoneWallDamaged',)
+_BODY = {}
+
+
+def _body_box(mesh, above=0.2):
+    """Bounding box of the vertices above `above` of the mesh height (drops rubble lying on the ground)."""
+    k = mesh.get_path_name()
+    if k not in _BODY:
+        b = mesh.get_bounding_box()
+        v = unreal.ProceduralMeshLibrary.get_section_from_static_mesh(mesh, 0, 0)[0]
+        zc = b.min.z + (b.max.z - b.min.z) * above
+        top = [p for p in v if p.z >= zc] or list(v)
+        _BODY[k] = unreal.Box(unreal.Vector(min(p.x for p in top), min(p.y for p in top), b.min.z),
+                              unreal.Vector(max(p.x for p in top), max(p.y for p in top), b.max.z))
+    return _BODY[k]
 
 
 def _grey_is_maze():
@@ -143,7 +159,7 @@ def sync_greybox():
             g.tags = [unreal.Name('VisGrey'), unreal.Name('GreyProxy')]
             n += 1
             continue
-        b = mesh.get_bounding_box()
+        b = _body_box(mesh) if mesh.get_name() in BODY_ONLY else mesh.get_bounding_box()
         pad = p.get('pad', 0.0)
         mn = unreal.Vector(b.min.x - pad, b.min.y - pad, b.min.z)
         mx = unreal.Vector(b.max.x + pad, b.max.y + pad, b.max.z + pad)
