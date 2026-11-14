@@ -72,7 +72,7 @@ def _proxy(label, xf, center, ext, mat):
 
 STAIR_ART = ('SM_PinkStone01',)
 # meshes with loose rubble scattered around the foot: the grey box only frames the main body
-BODY_ONLY = {'SM_StoneWallDamaged': 0.2, 'SM_StoneCliff01': 0.2, 'SM_StoneCliff02': 0.4}   # mesh: height fraction the body starts at
+BODY_ONLY = {'SM_StoneWallDamaged': 0.2, 'SM_StoneCliff01': 0.2, 'SM_StoneCliff02': 0.5}   # mesh: height fraction the body starts at
 _BODY = {}
 
 
