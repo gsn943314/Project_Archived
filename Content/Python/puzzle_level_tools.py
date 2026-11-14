@@ -568,6 +568,14 @@ def renumber_path_from_selection():
         raise RuntimeError('Select at least two path nodes, in walking order (Ctrl-click), then run this again.')
     chain = (_node_key(sel[0]) or ('A', 0))[0]
     ids = set(id(a) for a in sel)
+    others = [a for a in _actors() if 'PathNode' in [str(t) for t in a.tags]
+              and (_node_key(a) or ('', 0))[0] == chain and id(a) not in ids]
+    if others:
+        ok = unreal.EditorDialog.show_message(
+            'Renumber Path', f'{len(sel)} node(s) selected. {len(others)} other Path{chain} node(s) are not selected '
+            f'and will be set aside as UnusedNode.\n\nContinue?', unreal.AppMsgType.YES_NO)
+        if ok != unreal.AppReturnType.YES:
+            return
     with unreal.ScopedEditorTransaction('Renumber Path'):
         n = 0
         for a in _actors():
