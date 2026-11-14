@@ -130,12 +130,20 @@ def apply_art(seed=7):
             wall_tops[(r, c)] = sp[4]
     near_stair = set((r + dr, c + dc) for (r, c) in stairs for dr in (-1, 0, 1) for dc in (-1, 0, 1))
     for rc, h in walk.items():
-        if rc in stairs:
-            continue
         x, y = T.cell_ctr(rc, grid)
         for d in ortho:
             o = (rc[0] + d[0], rc[1] + d[1])
-            if o not in wall_tops or wall_tops[o] < h + 30 or o in near_stair:
+            if rc in stairs:                      # stairs: walls on both sides, rising with the steps
+                h0, h1, sd = stairs[rc]
+                if d in (sd, (-sd[0], -sd[1])) or o not in wall_tops:
+                    continue
+                yaw = (90 if d[1] else 0) + rng.choice((0, 180))
+                _place(f'Art_Side_r{rc[0]}_c{rc[1]}_{d[0]}{d[1]}', rng.choices(SIDES[:3], weights=SIDE_W[:3])[0],
+                       x + d[1] * (C / 2 + 50), y + d[0] * (C / 2 + 50), min(h0, h1),
+                       (C, 110, abs(h1 - h0) + SIDE_H), yaw)
+                n += 1
+                continue
+            if o not in wall_tops or wall_tops[o] < h + 30:
                 continue
             path = rng.choices(SIDES, weights=SIDE_W)[0]
             yaw = (90 if d[1] else 0) + rng.choice((0, 180))
