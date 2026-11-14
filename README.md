@@ -33,7 +33,10 @@ tags: [Experiment, AI, Active]
 
 ## 關卡編輯工具（Editor 模式，不用按 Play）
 
-由 `Content/Python/puzzle_level_tools.py` 提供，選單 **Puzzle** 與工具列按鈕。關卡由 `Editor` 資料夾裡的標記描述，改完標記按 **Rebuild Level** 就會重蓋地形並存檔。
+由 `Content/Python/puzzle_level_tools.py`、`live_edit.py` 提供，選單 **Puzzle** 與工具列按鈕（有圖示與文字）。關卡由 `Editor` 資料夾裡的標記描述。
+
+- **Live Edit（預設開啟）**：拖動標記、方塊、敵人，停下約 0.4 秒會**磁吸**到格子（350 cm 格、175 cm 一階；方塊轉角吸附 90°、細方塊吸附半格、自動落到地面），約 0.6 秒後地形**即時重建**。警告會以紅字顯示在場景上方。工具列 **Live** 可開關。
+- Live Edit 不會自動存檔，改完請 Ctrl+S；**Rebuild Level** 會重建導航並存檔。
 
 | 標記 | 外觀 | 作用 |
 |---|---|---|

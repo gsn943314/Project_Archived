@@ -193,14 +193,6 @@ def route(a, b):
     return out
 
 
-def _clear_maze():
-    for a in list(_actors()):
-        if _folder(a) == 'Maze' and a.get_actor_label() != 'Maze_Backdrop':
-            _eas().destroy_actor(a)
-        elif a.get_actor_label().startswith('Maze_Pillar'):
-            _eas().destroy_actor(a)
-
-
 def clear_all():
     for a in list(_actors()):
         f = _folder(a)
@@ -210,34 +202,31 @@ def clear_all():
             _eas().destroy_actor(a)
 
 
-def build_geometry(floor, pits, stairs, grid):
-    """floor / pits: {rc: height cm}; stairs: {rc: (h0 cm, h1 cm, (dr, dc))}. Returns cell bounds."""
-    eas = _eas()
-    cube = unreal.load_asset('/Game/LevelPrototyping/Meshes/SM_Cube')
-    m_floor = unreal.load_asset('/Game/Project/Art/Materials/MI_MazeFloor')
-    m_wall = unreal.load_asset('/Game/Project/Art/Materials/MI_MazeWall')
-    m_pit = unreal.load_asset('/Game/Project/Art/Materials/MI_MazeBackdrop')
+_ASSETS = {}
 
-    def box(label, x0, y0, sx, sy, top, mat, tags=()):
-        a = eas.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(x0, y0, BASE))
-        smc = a.static_mesh_component
-        smc.set_static_mesh(cube)
-        smc.set_material(0, mat)
-        a.set_actor_scale3d(unreal.Vector(sx / 100, sy / 100, max(1.0, top - BASE) / 100))
-        a.set_actor_label(label)
-        a.set_folder_path('Maze')
-        a.tags = [unreal.Name(t) for t in tags]
 
+def _asset(path):
+    if path not in _ASSETS or _ASSETS[path] is None:
+        _ASSETS[path] = unreal.load_asset(path)
+    return _ASSETS[path]
+
+
+def geometry_specs(floor, pits, stairs, grid):
+    """Desired terrain boxes: {label: (x0, y0, sx, sy, top, material_path, tags)} and the cell bounds."""
+    MF = '/Game/Project/Art/Materials/MI_MazeFloor'
+    MW = '/Game/Project/Art/Materials/MI_MazeWall'
+    MP = '/Game/Project/Art/Materials/MI_MazeBackdrop'
+    specs = {}
     lvl = dict(floor)
     lvl.update(pits)
     for rc, (h0, h1, _d) in stairs.items():
         lvl[rc] = max(h0, h1)
     for rc, h in floor.items():
         x, y = cell_min(rc, grid)
-        box(f'Maze_Path_r{rc[0]}_c{rc[1]}', x, y, C, C, h, m_floor)
+        specs[f'Maze_Path_r{rc[0]}_c{rc[1]}'] = (x, y, C, C, h, MF, ())
     for rc, h in pits.items():
         x, y = cell_min(rc, grid)
-        box(f'Maze_Pit_r{rc[0]}_c{rc[1]}', x, y, C, C, h - U, m_pit)
+        specs[f'Maze_Pit_r{rc[0]}_c{rc[1]}'] = (x, y, C, C, h - U, MP, ())
     opened = {}
     n = 7
     for rc, (h0, h1, d) in stairs.items():
@@ -245,15 +234,15 @@ def build_geometry(floor, pits, stairs, grid):
         for k in range(n):
             t = k if (d[0] + d[1]) > 0 else n - 1 - k
             top = h0 + (h1 - h0) * (k + 1) / n
+            lab = f'Maze_Stair_r{rc[0]}_c{rc[1]}_s{k}'
             if d[1] != 0:
-                box(f'Maze_Stair_r{rc[0]}_c{rc[1]}_s{k}', x + t * C / n, y, C / n, C, top, m_floor)
+                specs[lab] = (x + t * C / n, y, C / n, C, top, MF, ())
             else:
-                box(f'Maze_Stair_r{rc[0]}_c{rc[1]}_s{k}', x, y + t * C / n, C, C / n, top, m_floor)
+                specs[lab] = (x, y + t * C / n, C, C / n, top, MF, ())
         side = (-1, 0) if d[1] != 0 else (0, -1)       # camera-facing (-Y / -X) side stays open
         for kk in (-1, 0, 1):
             o = (rc[0] + side[0] + d[0] * kk, rc[1] + side[1] + d[1] * kk)
             opened[o] = min(opened.get(o, 1e9), min(h0, h1) - 60)
-
     rs = [rc[0] for rc in lvl]
     cs = [rc[1] for rc in lvl]
     r0, r1, c0, c1 = min(rs) - 2, max(rs) + 2, min(cs) - 2, max(cs) + 2
@@ -271,18 +260,56 @@ def build_geometry(floor, pits, stairs, grid):
             if (r, c) in opened:
                 top = min(top, opened[(r, c)])
             x, y = cell_min((r, c), grid)
-            box(f'Maze_Wall_r{r}_c{c}', x, y, C, C, top, m_wall, ('Wall',))
-    return r0, r1, c0, c1
+            specs[f'Maze_Wall_r{r}_c{c}'] = (x, y, C, C, top, MW, ('Wall',))
+    return specs, (r0, r1, c0, c1)
+
+
+def build_geometry(floor, pits, stairs, grid):
+    """Incremental: keeps terrain actors whose label already exists, only moves / rescales changed ones."""
+    eas = _eas()
+    cube = _asset('/Game/LevelPrototyping/Meshes/SM_Cube')
+    specs, bounds = geometry_specs(floor, pits, stairs, grid)
+    existing = {}
+    for a in list(_actors()):
+        lab = a.get_actor_label()
+        if _folder(a) == 'Maze' and lab != 'Maze_Backdrop':
+            if lab in specs and lab not in existing:
+                existing[lab] = a
+            else:
+                eas.destroy_actor(a)
+        elif lab.startswith('Maze_Pillar'):
+            eas.destroy_actor(a)
+    changed = 0
+    for lab, (x0, y0, sx, sy, top, mat, tags) in specs.items():
+        loc = unreal.Vector(x0, y0, BASE)
+        scale = unreal.Vector(sx / 100, sy / 100, max(1.0, top - BASE) / 100)
+        a = existing.get(lab)
+        if a is None:
+            a = eas.spawn_actor_from_class(unreal.StaticMeshActor, loc)
+            smc = a.static_mesh_component
+            smc.set_static_mesh(cube)
+            smc.set_material(0, _asset(mat))
+            a.set_actor_label(lab)
+            a.set_folder_path('Maze')
+            a.tags = [unreal.Name(t) for t in tags]
+            a.set_actor_scale3d(scale)
+            changed += 1
+            continue
+        if (a.get_actor_location() - loc).length() > 0.5:
+            a.set_actor_location(loc, False, False); changed += 1
+        if (a.get_actor_scale3d() - scale).length() > 0.001:
+            a.set_actor_scale3d(scale); changed += 1
+        smc = a.static_mesh_component
+        m = _asset(mat)
+        if smc.get_material(0) != m:
+            smc.set_material(0, m)
+    return bounds, changed
 
 
 # ------------------------------------------------------------------ rebuild
-def rebuild(save=True):
-    grid = get_grid()
-    nodes, floor_marks, holes, movers = read_markers(grid)
+def compute_layout(grid, nodes, floor_marks, holes, movers):
+    """Pure layout: returns floor / stairs / pits (cm), carved pocket cells and warnings."""
     warns = []
-    if not nodes.get('A'):
-        raise RuntimeError('No PathA_00 node in this level. Use "Add Path Node" to start a path '
-                           '(or Generate Random Block Tutorial, which creates the markers).')
     floor, stairs, pits = {}, {}, {}
     for ch in sorted(nodes):
         lst = nodes[ch]
@@ -293,15 +320,14 @@ def rebuild(save=True):
             seg = route(prc, rc)
             delta = t - pt
             m = abs(delta)
+            picks = set()
             if seg and m:
                 cand = [k for k in range(len(seg) - 1) if seg[k][1] == seg[k + 1][1]]
                 if len(cand) < m:
-                    warns.append(f'{plab} -> {lab}: needs {m} stair(s) but only {len(cand)} straight cell(s) - move the nodes further apart')
+                    warns.append((rc, f'{plab} -> {lab}: needs {m} stair(s), only {len(cand)} straight cell(s)'))
                 picks = set(cand[int((i + 0.5) * len(cand) / m)] for i in range(min(m, len(cand))))
-            else:
-                picks = set()
-                if m and not seg:
-                    warns.append(f'{plab} and {lab} are on the same cell but at different heights')
+            elif m and not seg:
+                warns.append((rc, f'{plab} / {lab}: same cell, different height'))
             h = pt
             for k, (cell, d) in enumerate(seg):
                 if k in picks:
@@ -316,11 +342,8 @@ def rebuild(save=True):
         if rc not in stairs:
             floor[rc] = t * U
     for rc, t in holes.items():
-        h = floor.pop(rc, t * U)
-        pits[rc] = h
-
-    # blocks / enemies standing on a wall get a pocket carved under them
-    carved = 0
+        pits[rc] = floor.pop(rc, t * U)
+    carved = []
     for a in movers:
         l = a.get_actor_location()
         rc = cell_of(l.x, l.y, grid)
@@ -329,36 +352,59 @@ def rebuild(save=True):
         nb = [floor[(rc[0] + dr, rc[1] + dc)] for dr, dc in ((0, 1), (1, 0), (0, -1), (-1, 0))
               if (rc[0] + dr, rc[1] + dc) in floor]
         floor[rc] = min(nb, key=lambda h: abs(h - l.z)) if nb else tier_of(l.z) * U
-        carved += 1
+        carved.append(rc)
+    return floor, stairs, pits, carved, warns
+
+
+def ground_z(rc, floor, stairs, pits):
+    if rc in pits:
+        return pits[rc] - U
+    if rc in stairs:
+        return max(stairs[rc][:2])
+    return floor.get(rc)
+
+
+def rebuild(save=True, navmesh=True):
+    grid = get_grid()
+    nodes, floor_marks, holes, movers = read_markers(grid)
+    if not nodes.get('A'):
+        raise RuntimeError('No PathA_00 node in this level. Use "Path Node" to start a path '
+                           '(or Generate Random Block Tutorial, which creates the markers).')
+    floor, stairs, pits, carved, warns = compute_layout(grid, nodes, floor_marks, holes, movers)
     for a in movers:
         l = a.get_actor_location()
-        rc = cell_of(l.x, l.y, grid)
-        z = pits[rc] - U if rc in pits else (max(stairs[rc][:2]) if rc in stairs else floor.get(rc, l.z))
-        a.set_actor_location(unreal.Vector(l.x, l.y, z), False, False)
+        z = ground_z(cell_of(l.x, l.y, grid), floor, stairs, pits)
+        if z is not None and abs(z - l.z) > 0.5:
+            a.set_actor_location(unreal.Vector(l.x, l.y, z), False, False)
+    (r0, r1, c0, c1), changed = build_geometry(floor, pits, stairs, grid)
 
-    _clear_maze()
-    r0, r1, c0, c1 = build_geometry(floor, pits, stairs, grid)
-
-    labels = {a.get_actor_label(): a for a in _actors()}
+    labels = {a.get_actor_label(): a for a in _actors() if a.get_actor_label() in
+              ('PointA_PathfindingCharacter', 'PointB_Target', 'NavMeshBoundsVolume_Puzzle')}
     first, last = nodes['A'][0], nodes['A'][-1]
-    if 'PointA_PathfindingCharacter' in labels:
-        x, y = cell_ctr(first[1], grid)
-        labels['PointA_PathfindingCharacter'].set_actor_location(unreal.Vector(x, y, first[2] * U + 100), False, False)
-    if 'PointB_Target' in labels:
-        x, y = cell_ctr(last[1], grid)
-        labels['PointB_Target'].set_actor_location(unreal.Vector(x, y, last[2] * U), False, False)
+
+    def place(lab, loc):
+        a = labels.get(lab)
+        if a and (a.get_actor_location() - loc).length() > 0.5:
+            a.set_actor_location(loc, False, False)
+    x, y = cell_ctr(first[1], grid)
+    place('PointA_PathfindingCharacter', unreal.Vector(x, y, first[2] * U + 100))
+    x, y = cell_ctr(last[1], grid)
+    place('PointB_Target', unreal.Vector(x, y, last[2] * U))
     hs = list(floor.values()) + [max(s[:2]) for s in stairs.values()]
     top_h = max(hs)
     nav = labels.get('NavMeshBoundsVolume_Puzzle')
     if nav:
         cx, cy = grid[0] + (c0 + c1 + 1) * C / 2, grid[1] + (r0 + r1 + 1) * C / 2
-        nav.set_actor_location(unreal.Vector(cx, cy, top_h / 2), False, False)
-        nav.set_actor_scale3d(unreal.Vector((c1 - c0 + 1) * C / 200 + 2, (r1 - r0 + 1) * C / 200 + 2, (top_h + 1400) / 200))
-    unreal.SystemLibrary.execute_console_command(_world(), 'BUILDPATHS')
+        place('NavMeshBoundsVolume_Puzzle', unreal.Vector(cx, cy, top_h / 2))
+        sc = unreal.Vector((c1 - c0 + 1) * C / 200 + 2, (r1 - r0 + 1) * C / 200 + 2, (top_h + 1400) / 200)
+        if (nav.get_actor_scale3d() - sc).length() > 0.001:
+            nav.set_actor_scale3d(sc)
+    if navmesh:
+        unreal.SystemLibrary.execute_console_command(_world(), 'BUILDPATHS')
     if save:
         unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
-    return {'warnings': warns, 'carved': carved, 'tiers': int(top_h / U), 'stairs': len(stairs),
-            'cells': len(floor) + len(stairs) + len(pits)}
+    return {'warnings': [w[1] for w in warns], 'warn_cells': warns, 'carved': len(carved), 'tiers': int(top_h / U),
+            'stairs': len(stairs), 'cells': len(floor) + len(stairs) + len(pits), 'changed': changed}
 
 
 # ------------------------------------------------------------------ menu actions
