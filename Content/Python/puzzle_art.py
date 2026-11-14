@@ -7,8 +7,9 @@ Rebuild on levels whose Editor_Grid has the tag "Art").
 
   stairs        -> SM_PinkStone01 (2x2x2 cells, the tier height must be 350: Editor_Grid tag TierH:350)
   path floor    -> SM_StonePlatform01 under every walkable cell
-  path sides    -> SM_StoneWall01 / Damaged / Window, sometimes SM_PinkMossStone02 (grey wall cubes stay)
-  turn corners  -> SM_PinkMossStone01; wall tops far from the path get a few SM_StoneCliff01/02
+  path sides    -> only the lower / open side; runs of 3 / 2 / 1 cells use SM_StoneWall01 / StoneWallDecor
+                   (or Damaged) / StoneWallWindow at ~native scale; runs overlap at corners
+  wall tops far from the path get a few SM_StoneCliff01/02
   outer edge    -> SM_StoneWall01 / Damaged / Decor / Window segments, 3 cells long
   point B       -> SM_Portal facing the path
 """
@@ -22,10 +23,9 @@ PLATFORM = M + 'SM_StonePlatform01'
 WALLS = [M + 'SM_StoneWall01', M + 'SM_StoneWall01', M + 'SM_StoneWallDamaged', M + 'SM_StoneWallDecor',
          M + 'SM_StoneWallWindow']
 PORTAL = M + 'SM_Portal'
-SIDES = [M + 'SM_StoneWall01', M + 'SM_StoneWallDamaged', M + 'SM_StoneWallWindow', M + 'SM_PinkMossStone02']
-SIDE_W = [6, 2, 1, 1]
-SIDE_H = 240          # side walls stay low so the third-person camera still sees the character
-CORNER = M + 'SM_PinkMossStone01'
+PIECES = {3: M + 'SM_StoneWall01', 1: M + 'SM_StoneWallWindow'}   # wall piece per run length (cells)
+PIECES_2 = [M + 'SM_StoneWallDecor', M + 'SM_StoneWallDecor', M + 'SM_StoneWallDamaged']
+OVERLAP = 60          # runs reach into the corner so two perpendicular walls intersect
 CLIFFS = [M + 'SM_StoneCliff01', M + 'SM_StoneCliff02']
 STAIR_YAW = -90.0     # SM_PinkStone01 climbs towards +Y at yaw 0
 PORTAL_YAW = 90.0     # SM_Portal faces -Y at yaw 0
@@ -121,45 +121,72 @@ def apply_art(seed=7):
         if cube:
             _set_visible(cube, False)
         n += k
-    # walls on both sides of the walkway (grey wall cubes stay as the base)
+    # stone walls only on the open (lower) side of the walkway, like the reference layout: the high side
+    # is already closed by the grey terrace. Consecutive edges become one run, filled with unscaled
+    # pieces: 3 cells -> SM_StoneWall01, 2 -> SM_StoneWallDecor / Damaged, 1 -> SM_StoneWallWindow.
     ortho = ((0, 1), (1, 0), (0, -1), (-1, 0))
     wall_tops = {}
     for lab, sp in specs.items():
         if lab.startswith('Maze_Wall_'):
             r, c = (int(v[1:]) for v in lab[len('Maze_Wall_'):].split('_'))
             wall_tops[(r, c)] = sp[4]
-    near_stair = set((r + dr, c + dc) for (r, c) in stairs for dr in (-1, 0, 1) for dc in (-1, 0, 1))
+    portal_edge = None
+    lst = nodes['A']
+    _seg = T.route(lst[-2][1], lst[-1][1])
+    if _seg:
+        portal_edge = (lst[-1][1], _seg[-1][1])
+    runs = {}
     for rc, h in walk.items():
-        x, y = T.cell_ctr(rc, grid)
+        if rc in stairs:
+            h0, h1, sd = stairs[rc]
+            base, top = min(h0, h1), max(h0, h1)
+        else:
+            sd, base, top = None, h, h
         for d in ortho:
             o = (rc[0] + d[0], rc[1] + d[1])
-            if rc in stairs:                      # stairs: walls on both sides, rising with the steps
-                h0, h1, sd = stairs[rc]
-                if d in (sd, (-sd[0], -sd[1])) or o not in wall_tops:
-                    continue
-                yaw = (90 if d[1] else 0) + rng.choice((0, 180))
-                _place(f'Art_Side_r{rc[0]}_c{rc[1]}_{d[0]}{d[1]}', rng.choices(SIDES[:3], weights=SIDE_W[:3])[0],
-                       x + d[1] * (C / 2 + 50), y + d[0] * (C / 2 + 50), min(h0, h1),
-                       (C, 110, abs(h1 - h0) + SIDE_H), yaw)
-                n += 1
+            if sd and d in (sd, (-sd[0], -sd[1])):
                 continue
-            if o not in wall_tops or wall_tops[o] < h + 30:
+            if o not in wall_tops or wall_tops[o] >= top + 30 or (rc, d) == portal_edge:
                 continue
-            path = rng.choices(SIDES, weights=SIDE_W)[0]
-            yaw = (90 if d[1] else 0) + rng.choice((0, 180))
-            _place(f'Art_Side_r{rc[0]}_c{rc[1]}_{d[0]}{d[1]}', path, x + d[1] * (C / 2 + 50), y + d[0] * (C / 2 + 50), h,
-                   (C, 110, SIDE_H), yaw)
-            n += 1
-    # outer corners of turns: pink moss rocks fill the gap where two side walls meet
-    for (r, c), top in wall_tops.items():
-        if (r, c) in near_stair or any((r + d[0], c + d[1]) in walk for d in ortho):
-            continue
-        for dr, dc in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
-            p = (r + dr, c + dc)
-            if p in walk and p not in stairs and (r + dr, c) in wall_tops and (r, c + dc) in wall_tops:
-                x, y = T.cell_ctr((r, c), grid)
-                _place(f'Art_Corner_r{r}_c{c}_{dr}{dc}', CORNER, x + dc * (C / 2 - 20), y + dr * (C / 2 - 20), walk[p],
-                       (200, 200, SIDE_H + 40), rng.choice((0, 90, 180, 270)))
+            if d[0]:
+                key = ('H', rc[0] + (1 if d[0] > 0 else 0), d[0], base)
+                pos = rc[1]
+            else:
+                key = ('V', rc[1] + (1 if d[1] > 0 else 0), d[1], base)
+                pos = rc[0]
+            runs.setdefault(key, []).append(pos)
+    for (axis, b, sign, base), ps in runs.items():
+        ps.sort()
+        groups, cur = [], [ps[0]]
+        for q in ps[1:]:
+            if q == cur[-1] + 1:
+                cur.append(q)
+            else:
+                groups.append(cur)
+                cur = [q]
+        groups.append(cur)
+        for g in groups:
+            ln = len(g)
+            parts = [3] * (ln // 3) + ([ln % 3] if ln % 3 else [])
+            if parts[-1] == 1 and len(parts) > 1:      # 4 = 2 + 2 instead of 3 + 1
+                parts[-2:] = [2, 2]
+            a = g[0]
+            for i, k in enumerate(parts):
+                path = PIECES[k] if k != 2 else rng.choice(PIECES_2)
+                _mesh(path)
+                mn, mx = _SIZE[path]
+                ex, ey, ez = mx.x - mn.x, mx.y - mn.y, mx.z - mn.z
+                length = k * C + (OVERLAP if i == 0 else 0) + (OVERLAP if i == len(parts) - 1 else 0)
+                s = k * C / ex                                     # uniform scale, close to 1
+                along = (a + k / 2) * C + ((-OVERLAP if i == 0 else 0) + (OVERLAP if i == len(parts) - 1 else 0)) / 2
+                across = b * C + sign * 25
+                if axis == 'H':
+                    x, y, yaw = grid[0] + along, grid[1] + across, 0
+                else:
+                    x, y, yaw = grid[0] + across, grid[1] + along, 90
+                _place(f'Art_Side_{axis}{b}_{sign}_{a}_{int(base)}', path, x, y, base, (length, ey * s, ez * s),
+                       yaw + rng.choice((0, 180)))
+                a += k
                 n += 1
     # a few cliffs as decoration on wall tops away from the walkway
     for (r, c), top in wall_tops.items():
