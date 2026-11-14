@@ -22,6 +22,8 @@ C = 350.0
 U = 175.0          # tier height of the open level (175, or 350 for art levels: Editor_Grid tag 'TierH:350')
 PIT = 175.0        # hole depth = block height
 OPEN_STAIR_SIDE = True   # lower the camera-side wall next to stairs (grey-box levels)
+ISLAND = True            # cut the terrain away outside the rim walls (level stands like an island)
+BACKDROP_Z = -1800.0     # the ground plane far below the island
 BASE = -440.0
 AGGRO = 900.0
 L_SCALE = (3.5, 3.5, 1.75)
@@ -288,9 +290,21 @@ def geometry_specs(floor, pits, stairs, grid):
     cs = [rc[1] for rc in lvl]
     r0, r1, c0, c1 = min(rs) - 2, max(rs) + 2, min(cs) - 2, max(cs) + 2
     cells = list(lvl.items())
+    # island edge: wall cells that don't touch the walkway and connect to the outside of the map are cut
+    # away (no terrain), so the level stands like an island with straight cliffs at its rim
+    def touches(r, c):
+        return any((r + dr, c + dc) in lvl for dr in (-1, 0, 1) for dc in (-1, 0, 1))
+    outside = set()
+    stack = [(r, c) for r in range(r0, r1 + 1) for c in (c0, c1)] + [(r, c) for c in range(c0, c1 + 1) for r in (r0, r1)]
+    while stack:
+        rc = stack.pop()
+        if rc in outside or rc in lvl or touches(*rc) or not (r0 <= rc[0] <= r1 and c0 <= rc[1] <= c1):
+            continue
+        outside.add(rc)
+        stack += [(rc[0] + 1, rc[1]), (rc[0] - 1, rc[1]), (rc[0], rc[1] + 1), (rc[0], rc[1] - 1)]
     for r in range(r0, r1 + 1):
         for c in range(c0, c1 + 1):
-            if (r, c) in lvl:
+            if (r, c) in lvl or (ISLAND and (r, c) in outside):
                 continue
             nb = [lvl[(r + dr, c + dc)] for dr in (-1, 0, 1) for dc in (-1, 0, 1) if (r + dr, c + dc) in lvl]
             if nb:
@@ -322,6 +336,11 @@ def build_geometry(floor, pits, stairs, grid):
                 eas.destroy_actor(a)
         elif lab.startswith('Maze_Pillar'):
             eas.destroy_actor(a)
+    for a in _actors():                      # ground plane drops far below so the island stands free
+        if a.get_actor_label() == 'Maze_Backdrop' and ISLAND:
+            l = a.get_actor_location()
+            if abs(l.z - BACKDROP_Z) > 1:
+                a.set_actor_location(unreal.Vector(l.x, l.y, BACKDROP_Z), False, False)
     changed = 0
     for lab, (x0, y0, sx, sy, top, mat, tags) in specs.items():
         loc = unreal.Vector(x0, y0, BASE)
