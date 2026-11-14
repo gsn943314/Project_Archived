@@ -15,7 +15,8 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | 地圖 | 內容 |
 |------|------|
 | `Lvl_BlockTutorial` | 方塊教學（主關卡，手工設計） |
-| `Lvl_BlockTutorial_V2/V3/V4` | 由隨機生成器產生的同概念版本（seed 11/33/55） |
+| `Lvl_BlockTutorial_V2` | 舊版生成器（3 條來回走道、爬 2 階，seed 11） |
+| `Lvl_BlockTutorial_V3/V4/V5` | 新版生成器：蜿蜒折線路徑、約 10 階高低差（seed 33/55/77） |
 | `Lvl_Terraces` | S 型往上爬的梯田關，含所有機關 |
 | `Lvl_PathfindingPuzzle` | 最早的平面原型，含所有機關 |
 
@@ -42,7 +43,8 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 
 ## 隨機關卡生成器
 
-- 程式：`Content/Python/block_tutorial_gen.py`（`generate(seed)` 回傳 seed、尺寸與解答）
+- 程式：`Content/Python/block_tutorial_gen.py`（`generate(seed)` 回傳 seed、尺寸、階數與解答）
+- 版面：隨機折線路徑（直線段 3–12 格、走道間至少隔 3 格）、約 13 座樓梯（含 1 座下坡）爬到約 10 階；牆高取相鄰較低的一側，呈梯田感。`plan(seed)` 是純 Python，可在 Unreal 外測試。
 - 按鈕：Editor 選單 **Puzzle → Generate Random Block Tutorial** 或工具列 **Random Level**（由 `Content/Python/init_unreal.py` 在啟動時註冊）
 - 只會覆寫「目前開著、名稱含 BlockTutorial」的關卡。要新版本請先複製一張地圖再生成。
 

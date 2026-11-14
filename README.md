@@ -27,7 +27,8 @@ tags: [Experiment, AI, Active]
 |---|---|
 | `Lvl_BlockTutorial`<br>![](Docs/overviews/Lvl_BlockTutorial.png) | `Lvl_BlockTutorial_V2`<br>![](Docs/overviews/Lvl_BlockTutorial_V2.png) |
 | `Lvl_BlockTutorial_V3`<br>![](Docs/overviews/Lvl_BlockTutorial_V3.png) | `Lvl_BlockTutorial_V4`<br>![](Docs/overviews/Lvl_BlockTutorial_V4.png) |
-| `Lvl_Terraces`<br>![](Docs/overviews/Lvl_Terraces.png) | `Lvl_PathfindingPuzzle`<br>![](Docs/overviews/Lvl_PathfindingPuzzle.png) |
+| `Lvl_BlockTutorial_V5`<br>![](Docs/overviews/Lvl_BlockTutorial_V5.png) | `Lvl_Terraces`<br>![](Docs/overviews/Lvl_Terraces.png) |
+| `Lvl_PathfindingPuzzle`<br>![](Docs/overviews/Lvl_PathfindingPuzzle.png) | |
 
 ## 操作（PIE 編輯階段）
 
