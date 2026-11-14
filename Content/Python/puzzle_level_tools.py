@@ -558,6 +558,35 @@ def add_enemy():
     return _add_mover('Enemy', 'Add Enemy')
 
 
+def renumber_path_from_selection():
+    """Ctrl-click the path nodes in walking order (first = start A, last = B), then run this: they become
+    PathA_00, PathA_01 ... Nodes of the same chain that were not selected stop being path nodes
+    (renamed UnusedNode_NN, kept so nothing is lost). Fixes nodes duplicated with Alt-drag, whose labels
+    (PathA_3 ...) break the order."""
+    sel = [a for a in _eas().get_selected_level_actors() if 'PathNode' in [str(t) for t in a.tags]]
+    if len(sel) < 2:
+        raise RuntimeError('Select at least two path nodes, in walking order (Ctrl-click), then run this again.')
+    chain = (_node_key(sel[0]) or ('A', 0))[0]
+    ids = set(id(a) for a in sel)
+    with unreal.ScopedEditorTransaction('Renumber Path'):
+        n = 0
+        for a in _actors():
+            k = _node_key(a) if 'PathNode' in [str(t) for t in a.tags] else None
+            if k and k[0] == chain and id(a) not in ids:
+                a.tags = [unreal.Name('UnusedNode')]
+                a.set_actor_label(f'UnusedNode_{n:02d}')
+                n += 1
+        for i, a in enumerate(sel):
+            a.set_actor_label(f'Path{chain}_{i:02d}#')          # temporary, avoids clashes
+        for i, a in enumerate(sel):
+            a.set_actor_label(f'Path{chain}_{i:02d}')
+    r = rebuild(save=False)
+    msg = f'Path{chain}: {len(sel)} nodes in selection order; {n} unused node(s) set aside.'
+    if r['warnings']:
+        msg += '\n\nWarnings:\n- ' + '\n- '.join(r['warnings'])
+    unreal.EditorDialog.show_message('Renumber Path', msg, unreal.AppMsgType.OK)
+
+
 def rebuild_from_menu():
     try:
         with unreal.ScopedEditorTransaction('Rebuild Level From Markers'):
