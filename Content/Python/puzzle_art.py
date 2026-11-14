@@ -26,7 +26,11 @@ WALLS = [M + 'SM_StoneWall01', M + 'SM_StoneWall01', M + 'SM_StoneWallDamaged', 
 PORTAL = M + 'SM_Portal'
 PIECES = {3: M + 'SM_StoneWall01', 1: M + 'SM_StoneWallWindow'}   # wall piece per run length (cells)
 PIECES_2 = [M + 'SM_StoneWallDecor']
-RAMP = M + 'SM_StoneWallDamaged'   # sloped wall: the side of a stair (flat cell + stair cell)
+RAMP = M + 'SM_StoneWallDamaged'   # sloped wall: the side of a stair (flat cell + stair cell), unscaled
+RAMP_YAW = 180.0      # relative to the climb direction
+RAMP_ALONG = -140.0   # pivot offset from the stair cell centre along the climb (towards the flat cell)
+RAMP_LAT_C = -11.5    # pivot offset to the right of the climb (mesh is not symmetric)
+RAMP_LAT = 254.5      # distance of each side's pivot from the centre line
 OVERLAP = 60          # runs reach into the corner so two perpendicular walls intersect
 CLIFFS = [M + 'SM_StoneCliff01', M + 'SM_StoneCliff02']
 STAIR_YAW = -90.0     # SM_PinkStone01 climbs towards +Y at yaw 0
@@ -63,6 +67,20 @@ def _place(label, path, cx, cy, z, size, yaw, folder='Art'):
     smc.set_editor_property('can_ever_affect_navigation', False)
     a.set_actor_enable_collision(False)
     a.set_actor_scale3d(s)
+    a.set_actor_label(label)
+    a.set_folder_path(folder)
+    return a
+
+
+def _place_raw(label, path, x, y, z, yaw, folder='Art'):
+    """Spawns `path` unscaled with its pivot at x, y, z."""
+    a = T._eas().spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(x, y, z), unreal.Rotator(0, 0, yaw))
+    smc = a.static_mesh_component
+    smc.set_static_mesh(_mesh(path))
+    smc.set_collision_profile_name('NoCollision')
+    smc.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    smc.set_editor_property('can_ever_affect_navigation', False)
+    a.set_actor_enable_collision(False)
     a.set_actor_label(label)
     a.set_folder_path(folder)
     return a
@@ -145,18 +163,20 @@ def apply_art(seed=7):
         for side in ((up[1], up[0]), (-up[1], -up[0])):      # the two sides perpendicular to the climb
             if (rc[0] + side[0], rc[1] + side[1]) not in wall_tops:
                 continue
+            if (low_cell[0] + side[0], low_cell[1] + side[1]) not in wall_tops:
+                continue                                # path turns at the foot of the stair: plain walls there
             ramp_cover.add((rc, side))
             ramp_cover.add((low_cell, side))
-            _mesh(RAMP)
-            mn, mx = _SIZE[RAMP]
-            s_ = 2 * C / (mx.x - mn.x)
-            depth = (mx.y - mn.y) * s_
+            # placement measured from the ramp the level designer adjusted by hand (stair r5_c4, scale 1)
+            ux, uy = up[1], up[0]                       # climb direction in world X / Y
+            rx, ry = uy, -ux                            # right of the climb
+            sgn = side[1] * rx + side[0] * ry
             x, y = T.cell_ctr(rc, grid)
-            cx = x - up[1] * C / 2 + side[1] * (C / 2 + depth / 2 - 30)
-            cy = y - up[0] * C / 2 + side[0] * (C / 2 + depth / 2 - 30)
-            yaw = {(0, 1): 0, (1, 0): 90, (0, -1): 180, (-1, 0): 270}[up]   # SM_StoneWallDamaged rises towards +X
-            _place(f'Art_Ramp_r{rc[0]}_c{rc[1]}_{side[0]}{side[1]}', RAMP, cx, cy, min(h0, h1),
-                   (2 * C, depth, (mx.z - mn.z) * s_), yaw)
+            lat = RAMP_LAT_C + sgn * RAMP_LAT
+            cx = x + ux * RAMP_ALONG + rx * lat
+            cy = y + uy * RAMP_ALONG + ry * lat
+            yaw = {(1, 0): 0, (0, 1): 90, (-1, 0): 180, (0, -1): 270}[(ux, uy)] + RAMP_YAW
+            m = _place_raw(f'Art_Ramp_r{rc[0]}_c{rc[1]}_{side[0]}{side[1]}', RAMP, cx, cy, min(h0, h1), yaw)
             n += 1
     for rc, h in walk.items():
         if rc in stairs:
@@ -194,8 +214,8 @@ def apply_art(seed=7):
                 _mesh(path)
                 mn, mx = _SIZE[path]
                 ex, ey, ez = mx.x - mn.x, mx.y - mn.y, mx.z - mn.z
-                length = k * C + (OVERLAP if i == 0 else 0) + (OVERLAP if i == len(parts) - 1 else 0)
-                s = k * C / ex                                     # uniform scale, close to 1
+                s = 1.0                                            # native size, no scaling
+                length = ex
                 along = (a + k / 2) * C + ((-OVERLAP if i == 0 else 0) + (OVERLAP if i == len(parts) - 1 else 0)) / 2
                 across = b * C + sign * (ey * s / 2 - 10)       # flush against the walkway edge
                 if axis == 'H':
