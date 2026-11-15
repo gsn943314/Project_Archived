@@ -465,6 +465,9 @@ def rebuild(save=True, navmesh=True):
         if z is not None and abs(z - l.z) > 0.5:
             a.set_actor_location(unreal.Vector(l.x, l.y, z), False, False)
     (r0, r1, c0, c1), changed = build_geometry(floor, pits, stairs, grid)
+    import storybook_skin as SK
+    if SK.enabled():
+        SK.apply()
 
     labels = {a.get_actor_label(): a for a in _actors() if a.get_actor_label() in
               ('PointA_PathfindingCharacter', 'PointB_Target', 'NavMeshBoundsVolume_Puzzle')}

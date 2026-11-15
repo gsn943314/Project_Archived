@@ -111,7 +111,8 @@ def _sync_maze_grey():
         if T._folder(a) != 'Maze' or not a.get_actor_label().startswith('Maze_Stair'):
             continue
         p = a.get_actor_bounds(False)[0]
-        hit = any(abs(p.x - o.x) <= e.x + 10 and abs(p.y - o.y) <= e.y + 10 for o, e in stairs)
+        hit = any(abs(p.x - o.x) <= e.x + 10 and abs(p.y - o.y) <= e.y + 10 for o, e in stairs) \
+            or 'Skinned' in [str(t) for t in a.tags]       # storybook skin twin shows in the final render
         tags = [t for t in a.tags if str(t) != 'VisGrey'] + ([unreal.Name('VisGrey')] if hit else [])
         a.tags = tags
         n += hit
