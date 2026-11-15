@@ -16,6 +16,7 @@ ICONS = {  # toolbar icons (AppStyle)
     'RebuildFromMarkers': 'LevelEditor.Build',
     'LiveEdit': 'Icons.Visible',
     'ViewToggle': 'LevelEditor.Tabs.Viewports',
+    'PathToggle': 'Icons.Visible',
     'ApplyArt': 'ClassIcon.StaticMeshActor',
     'AddPathNode': 'ClassIcon.Sphere',
     'AddFloor': 'ClassIcon.Plane',
@@ -66,6 +67,10 @@ ENTRIES = [
      'Switches the editor view between the grey box and the final art (grey proxies are rebuilt from the art)',
      "import importlib, puzzle_level_tools as T, view_mode as V; importlib.reload(T); importlib.reload(V); V.toggle()",
      'Grey / Final'),
+    ('PathToggle', 'Path Preview On / Off',
+     'Shows or hides the live shortest-path line in the game (BP_PathfindingPlayerController.bShowPath, saved; also applies to a running PIE)',
+     "import importlib, view_mode as V; importlib.reload(V); V.toggle_path()",
+     'Path On / Off'),
 ]
 
 

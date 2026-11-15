@@ -291,6 +291,29 @@ def set_view(final):
             a.set_is_temporarily_hidden_in_editor(final)
 
 
+PC_BP = '/Game/Project/Programming/Blueprints/Pathfinding/BP_PathfindingPlayerController'
+
+
+def toggle_path():
+    """Toolbar Path On / Off: flips BP_PathfindingPlayerController.bShowPath (the in-game live shortest-path line), saves
+    the blueprint so it sticks (also in builds), and applies it to a running PIE controller."""
+    bp = unreal.load_asset(PC_BP)
+    cdo = unreal.get_default_object(bp.generated_class())
+    on = not bool(cdo.get_editor_property('bShowPath'))
+    cdo.set_editor_property('bShowPath', on)
+    unreal.EditorAssetLibrary.save_loaded_asset(bp, False)
+    g = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world()
+    if g:
+        pc = unreal.GameplayStatics.get_player_controller(g, 0)
+        if pc and pc.get_class() == bp.generated_class():
+            pc.set_editor_property('bShowPath', on)
+    msg = 'Path preview ' + ('ON' if on else 'OFF')
+    unreal.log(msg)
+    if g:
+        unreal.SystemLibrary.print_string(g, msg, True, False, unreal.LinearColor(0.2, 1, 0.3, 1), 2.0)
+    return on
+
+
 def toggle():
     final = not _S['final']
     if not final:
