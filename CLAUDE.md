@@ -146,6 +146,12 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 12. **導航半徑 AgentRadius = 120**（`DefaultEngine.ini` 與各關卡的 `RecastNavMesh-Default`）：讓角色走在路中間、不貼著牆和模型邊緣。舊關卡的 RecastNavMesh 仍是 35，要改那個 actor 的 agent_radius 再 BUILDPATHS。
 11. **角色不走 / 路徑是 0 個點**：通常是關卡裡的 `RecastNavMesh-Default` 壞掉（log 出現 `Unable to find RecastNavMesh instance`）。修法：刪掉該 actor → 稍微移動 `NavMeshBoundsVolume` → 執行 `BUILDPATHS`（有時要做兩次）→ 存檔。改動地形或 NavMesh 範圍後都要重建。
 
+## HUD（Creator Access 卡片，`WBP_PathfindingHUD`）
+
+- 設計稿 Creator_HUD_A（貼圖在 `/Game/Project/Art/UI/CreatorHUD/`：`T_UI_Creator_Card` 底板、`Header` 標題條、`ButtonMask` 按鈕共用遮罩、`PlayGlyph` / `ResetGlyph`）。所有關卡共用同一個 HUD，所以 Level 0 / 1 / 2 都會換上。
+- 結構：`Root` → `CreatorCard`（CanvasPanel，原圖像素座標排版，render scale 0.7，位置 (28, 30)）→ `CardBg`、`HeaderBg`、`CreatorTitle`「CREATOR ACCESS」、`GoalText`（目標文字，預設 "Make a way across."，會換行）、`PlayButton` / `ResetButton`（遮罩染色：可按 #EDFC35、停用 #7D8599，圖示與文字深藍 #1B2550）。
+- 舊的資訊面板 `Panel`（Phase / Path / Tool / Selected / 說明文字）保留但 Collapsed，控制器仍會寫它的文字，要除錯時把 `Panel` 設回 Visible 即可。按鈕仍是原本的 `PlayButton` / `ResetButton`（控制器用 `SetIsEnabled` 切換）。
+
 ## 選單 / 設定（`/Game/Project/Programming/Blueprints/Menu/`）
 
 - `BP_PuzzleGameInstance`：MasterVolume / MusicVolume / SfxVolume / Language（0 英文、1 繁中、2 簡中，語言按鈕循環切換），`LoadSettings`、`SaveSettings`（slot `PuzzleSettings`）、`ApplyAudio`。
