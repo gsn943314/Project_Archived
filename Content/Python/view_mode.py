@@ -75,6 +75,34 @@ STAIR_ART = ('SM_PinkStone01', 'SM_StoneStairs')
 BODY_ONLY = {'SM_StoneWallDamaged': 0.2, 'SM_StoneCliff01': 0.2, 'SM_StoneCliff02': 0.5,
              'SM_StoneMonument': 0.35, 'SM_PinkMossStone01': 0.2, 'SM_StoneCliff05': 0.3}   # mesh: height fraction the body starts at
 _BODY = {}
+# irregular rocks: the grey box is several boxes, one per slice along the longer horizontal axis, each fitted to that
+# slice's vertices (above the BODY_ONLY rubble line) and only as tall as that slice
+SLICED = {'SM_StoneCliff01': 4}
+
+
+def _slices(mesh, k, above=0.2):
+    b = mesh.get_bounding_box()
+    v = unreal.ProceduralMeshLibrary.get_section_from_static_mesh(mesh, 0, 0)[0]
+    zc = b.min.z + (b.max.z - b.min.z) * above
+    pts = [p for p in v if p.z >= zc] or list(v)
+    along_x = (b.max.x - b.min.x) >= (b.max.y - b.min.y)
+    lo = min(p.x if along_x else p.y for p in pts)
+    hi = max(p.x if along_x else p.y for p in pts)
+    q = lambda s, f: s[min(len(s) - 1, max(0, int(len(s) * f)))]
+    out = []
+    for i in range(k):
+        a0, a1 = lo + (hi - lo) * i / k, lo + (hi - lo) * (i + 1) / k
+        sp = [p for p in pts if a0 <= (p.x if along_x else p.y) <= a1]
+        if len(sp) < 6:
+            continue
+        de = sorted(p.y if along_x else p.x for p in sp)
+        top = sorted(p.z for p in sp)
+        d0, d1, zt = q(de, .04), q(de, .96), q(top, .97)
+        if along_x:
+            out.append((unreal.Vector((a0 + a1) / 2, (d0 + d1) / 2, (b.min.z + zt) / 2), unreal.Vector(a1 - a0, d1 - d0, zt - b.min.z)))
+        else:
+            out.append((unreal.Vector((d0 + d1) / 2, (a0 + a1) / 2, (b.min.z + zt) / 2), unreal.Vector(d1 - d0, a1 - a0, zt - b.min.z)))
+    return out
 
 
 def _body_box(mesh, above=0.2):
@@ -181,6 +209,11 @@ def sync_greybox():
             g.set_folder_path(FOLDER)
             g.tags = [unreal.Name('VisGrey'), unreal.Name('GreyProxy')]
             n += 1
+            continue
+        if mesh.get_name() in SLICED and shape == 'box':
+            for i, (c, ext) in enumerate(_slices(mesh, SLICED[mesh.get_name()], BODY_ONLY.get(mesh.get_name(), 0.2))):
+                _proxy(f'{lab}_{i}', xf, c, ext, mat)
+                n += 1
             continue
         b = _body_box(mesh, BODY_ONLY[mesh.get_name()]) if mesh.get_name() in BODY_ONLY else mesh.get_bounding_box()
         pad = p.get('pad', 0.0)
