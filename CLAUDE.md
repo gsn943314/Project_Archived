@@ -18,7 +18,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | `Lvl_BlockTutorial_V2` | 舊版生成器（3 條來回走道、爬 2 階，seed 11） |
 | `Lvl_BlockTutorial_V5_Art` | V5 套用 MegaJam 美術（`/Game/Dev/Meshes`），每階 175 cm（樓梯模型高度壓成 0.5） |
 | `Lvl_Level2` | Level 2（Forgotten Wilds / Hollow Shrine，`level2_build.py` 生成；改版面改那支檔再 `build()`）：2-1 右邊填洞＋旋轉橋＋3 階樓梯、左邊填洞＋野獸（箱子擋門）＋水車升降梯（3 階，開場在上面）→ Checkpoint → 2-2 填洞、旋轉橋、守衛在高台（它的升降梯留在上面它就會坐下來攻擊）、填洞、升降梯（3 階）上到 B。16×20 格、8 階 |
-| `Lvl_Level0_Davidtesting` | Level 0（複製自組員的 `/Game/Dev/Lvl_Level0_Storybook`，手擺美術）：兩座島（草地範圍全用 Wide 鋪成灰盒地板，中間 3 格斷崖）；佈告欄在原位原朝向（路中間、正面朝起點，`NoticeBoard_Blocker` 隱形碰撞讓角色繞過），開場狐狸走到它前面（TargetPoint `IntroSpot`）看對話，點完進灰盒；起點 → 繞過佈告欄 → 3 格斷崖坑（`FillSlot_c4/5/6`）→ 樓梯 → 傳送門。3 個方塊上掛直立的石頭（Placement1），填進坑後最終畫面換成躺平的石橋（Placement2）。`Editor_Grid` tag `MazeGreyOnly`（Maze 只在灰盒顯示，美術地台＝最終畫面）；這關走道只有一格寬，`RecastNavMesh` 半徑用 35（120 會把走道侵蝕光） |
+| `Lvl_Level0_Davidtesting` | Level 0（複製自組員的 `/Game/Dev/Lvl_Level0_Storybook`，手擺美術）：兩座島（草地範圍全用 Wide 鋪成灰盒地板，中間 3 格斷崖）；佈告欄在原位原朝向（路中間、正面朝起點，`NoticeBoard_Blocker` 隱形碰撞讓角色繞過），開場狐狸走到它前面（TargetPoint `IntroSpot`）看對話，點完進灰盒；起點 → 繞過佈告欄 → 3 格斷崖坑（`FillSlot_c4/5/6`）→ 樓梯 → 傳送門。3 個方塊上掛直立的石頭（Placement1），填進坑後最終畫面換成躺平的石橋（Placement2）。`Editor_Grid` tag `MazeGreyOnly`（Maze 只在灰盒顯示，美術地台＝最終畫面）；這關走道只有一格寬，`RecastNavMesh` 半徑用 35（120 會把走道侵蝕光）。灰盒總覽鏡頭是 isometric（`OverviewCamera` 正交投影，pitch -35.26°、yaw -45°，OrthoWidth 3000；`ZoomCamera` 遇到正交鏡頭改調 OrthoWidth 1200–14000），PLAY 跟拍仍是第三人稱 |
 | `Lvl_BlockTutorial_V3/V4/V5` | 新版生成器：蜿蜒折線路徑、約 10 階高低差（seed 33/55/77） |
 | `Lvl_Terraces` | S 型往上爬的梯田關，含所有機關 |
 | `Lvl_PathfindingPuzzle` | 最早的平面原型，含所有機關 |
