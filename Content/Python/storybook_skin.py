@@ -139,11 +139,26 @@ def tag_gap():
     if rng is None:
         return 0
     n = 0
+    rim = T.RIM if hasattr(T, 'RIM') else 175.0
     for a in T._actors():
         if T._folder(a) != 'Maze':
             continue
-        o = a.get_actor_bounds(False)[0]
+        o, e = a.get_actor_bounds(False)
         if not (rng[0] < o.x < rng[1]):
+            continue
+        lab = a.get_actor_label()
+        x0, x1 = o.x - e.x, o.x + e.x
+        if lab.startswith('Maze_Wall') and (abs(x0 - rng[0]) < 1 or abs(x1 - rng[1]) < 1):
+            # the islands stay walled in at the gap: a wall cell at either end of the gap is kept as a thin rim
+            # (RIM wide, on the island side), not the full-cell thickening next to the pits
+            if x1 - x0 > rim + 1:
+                keep0 = rng[0] if abs(x0 - rng[0]) < 1 else rng[1] - rim
+                s = a.get_actor_scale3d()
+                a.set_actor_scale3d(unreal.Vector(s.x * rim / (x1 - x0), s.y, s.z))
+                o2, e2 = a.get_actor_bounds(False)
+                a.set_actor_location(a.get_actor_location() + unreal.Vector(keep0 - (o2.x - e2.x), 0, 0), False, False)
+            a.tags = [t for t in a.tags if str(t) != 'NoShow']
+            a.set_actor_hidden_in_game(False)
             continue
         if 'NoShow' not in [str(t) for t in a.tags]:
             a.tags = list(a.tags) + [unreal.Name('NoShow')]

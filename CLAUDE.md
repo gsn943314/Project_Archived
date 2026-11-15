@@ -63,7 +63,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - **開場對話**（`BP_PathfindingPlayerController.PlayIntro` / `ShowIntroDialogue` / `NextLine`）：關卡裡有 tag `IntroSpot` 的 TargetPoint 時，BeginPlay 不直接進灰盒：Phase 3、隱藏 HUD、最終畫面，Point A 走到該點並轉成它的朝向，畫面下方 `WBP_Dialogue` 依序顯示它的 tag `Say:<文字>`，左鍵下一句，最後一句後回起點並 `EnterPlanning`。
 - **填坑換美術**（`SetViewMode`）：tag `FillSlot` 的 TargetPoint（放在坑的格子中心），attach 在它上面的美術只在「最終畫面且有方塊填進這個坑」時顯示，填坑方塊自己 attach 的美術則隱藏。
 - **後段晚點出現**（`Editor_Grid` tag `RevealAfterX:<x>`，`storybook_skin.tag_reveal()`，Rebuild / Sync Greybox 後自動補 tag）：中心在 x 之後的 Maze、美術、`GB_`、方塊與其美術加 tag `RevealAfterFill`；遊戲中在第一個方塊填進坑（`FillSlot`）之前全部隱藏、方塊點不到，填進去後 `CheckReveal`（`DropFiller` 之後呼叫）把它們顯示出來。Level 0 用 175：一開始只有第一格坑，另外兩格坑和整座後島都先不出現。
-- **斷崖只看得到引導**（`Editor_Grid` tag `GapX:<x0>:<x1>`，`storybook_skin.tag_gap()`，Rebuild 後自動補）：中心在這段 x 範圍內的 Maze（坑底、坑邊的牆、島邊靠缺口的半格牆）加 tag `NoShow`：遊戲與編輯器都不顯示、碰撞保留（方塊照樣落在坑底），兩座島看起來是分開的；每格坑放一個半透明的引導方塊（資料夾 `Guides`，`M_GuideGhost`，tag `VisGrey` + `FillGhost`，後兩格加 `RevealAfterFill`）。Level 0 用 -175:875。
+- **斷崖只看得到引導**（`Editor_Grid` tag `GapX:<x0>:<x1>`，`storybook_skin.tag_gap()`，Rebuild 後自動補）：中心在這段 x 範圍內的坑底與坑邊整格的牆加 tag `NoShow`（缺口兩端的牆縮成半格 RIM 保留，島照樣被邊牆圍起來，只留路口）：遊戲與編輯器都不顯示、碰撞保留（方塊照樣落在坑底），兩座島看起來是分開的；每格坑放一個半透明的引導方塊（資料夾 `Guides`，`M_GuideGhost`，tag `VisGrey` + `FillGhost`，後兩格加 `RevealAfterFill`）。Level 0 用 -175:875。
 - **Checkpoint**：tag `Checkpoint` 的 actor；角色經過（2D 260 cm 內）時把它存成新的起點，被抓或 RESET 後從這裡重來（`BP_PathfindingCharacter` Tick）。
 - 相鄰兩個節點高度不同 → 中間自動放樓梯（需要足夠的直線格，不夠會出現警告）。方塊/敵人在牆上 → 自動挖凹槽。
 - 格子原點存在 `Editor_Grid` actor。生成器也是先放標記再呼叫 `rebuild()`，所以 V3/V4/V5 與新生成的關卡都能直接編輯；`Lvl_BlockTutorial`、`V2` 沒有標記。
