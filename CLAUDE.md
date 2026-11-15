@@ -86,7 +86,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 鏡頭和目標之間的美術牆 / 懸崖會挖出一個不規則的洞（撕紙邊＋暖色描邊），看得到牆後面的小狐或方塊。地板、樓梯、道具不會被挖。
 
 - **資源**：`/Game/Dev/Materials/MPC_Occlusion`（`Enable`、`Target`、`Radius` 170、`NearMargin` 60、`FootOffset` -40、`EdgeNoise`、`RimWidth`、`RimColor`；預設 `Enable = 0`），`/Game/Dev/Materials/Functions/MF_OcclusionCutout`（HLSL 原始碼 `Tools/StorybookPP/Occlusion_Cutout.hlsl`，建置腳本 `Tools/StorybookPP/build_occlusion.py`）。挖空範圍是從鏡頭出發的圓錐，螢幕上大小不隨縮放改變；只挖「比目標更靠近鏡頭、且高於目標腳底」的像素。
-- **材質**：`M_Master` 是 **Masked**；Base Color 與 Opacity Mask 前面各有 static switch `OcclusionCutout`（關閉＝遮罩恆為 1，不挖）。目前打開開關的 MI：`MI_StoneWall01/Decor/Window/Damaged`、`MI_StoneCliff01–11`、`MI_StoneArchway`、`MI_StoneArchRuined`、`MI_StoneMonument`、`MI_Portal`。**要讓新的美術也能被挖：在它的 MI 勾 `OcclusionCutout`**（並加進 `build_occlusion.py` 的 `WALL_MIS`）。
+- **材質**：`M_Master` 是 **Masked**；Base Color 與 Opacity Mask 前面各有 static switch `OcclusionCutout`（關閉＝遮罩恆為 1，不挖）。目前打開開關的 MI：`MI_StoneWall01/Decor/Window/Damaged`、`MI_StoneCliff01–11`、`MI_StoneArchway`、`MI_StoneArchRuined`、`MI_StoneMonument`、`MI_Portal`、`MI_MossStone01`、`MI_PinkMossStone01/02`、`MI_SmallRockSet`。**要讓新的美術也能被挖：在它的 MI 勾 `OcclusionCutout`**（並加進 `build_occlusion.py` 的 `WALL_MIS`）。
 - **灰盒**：`M_PrototypeGrid` 也接了同樣的開關（`MI_MazeWall` 已勾），但母材質仍是 Opaque，所以灰盒牆目前不會被挖；要啟用就把 `M_PrototypeGrid` 改成 Masked。
 - **驅動**：`BP_PathfindingPlayerController.UpdateOcclusion`（`ReceiveTick` 最後呼叫）每幀寫 MPC：Phase 1/2 目標＝小狐；Phase 0 拖曳中目標＝被拖的方塊（+90 cm）；其他時候 `Enable = 0`。
 - **還沒做**：編輯階段滑鼠「穿過」被挖開的牆點到後面的方塊（拾取仍會被 `Maze` 牆的碰撞擋住）。

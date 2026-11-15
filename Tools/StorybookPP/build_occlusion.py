@@ -38,7 +38,8 @@ WALL_MIS = ["/Game/Dev/Materials/" + n for n in [
     "MI_StoneCliff01", "MI_StoneCliff02", "MI_StoneCliff03", "MI_StoneCliff04", "MI_StoneCliff05",
     "MI_StoneCliff06", "MI_StoneCliff07", "MI_StoneCliff08", "MI_StoneCliff09", "MI_StoneCliff10",
     "MI_StoneCliff11", "MI_StoneArchway", "MI_StoneArchRuined", "MI_StoneMonument",
-    "MI_Portal",
+    "MI_Portal", "MI_MossStone01", "MI_PinkMossStone01", "MI_PinkMossStone02",
+    "MI_SmallRockSet",
 ]] + ["/Game/Project/Art/Materials/MI_MazeWall"]
 
 
