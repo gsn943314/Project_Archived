@@ -50,12 +50,15 @@ MECH_BP = '/Game/Project/Programming/Blueprints/Pathfinding/BP_Mechanism'
 MAT = '/Game/Project/Art/Materials/Gimmick/'
 
 
-GREY = '/Game/Project/Art/Materials/MI_MazeFloor'   # light path grey: interactables read as part of the walkway
+GREY = '/Game/Project/Art/Materials/MI_Interactable'   # path grey, a little warmer: reads as walkway, but findable
 
 
 def _disguise(a):
-    """Grey box view: every interactable piece looks like plain grey terrain (no purple / red / orange / yellow);
-    the player finds them by hovering (the edit mode highlights interactables under the cursor)."""
+    """Grey box view: every interactable piece (block, enemy, bridge, lift) gets the same slightly warm path-grey
+    (MI_Interactable) instead of purple / red / orange / yellow. Tag Disguise makes the blueprints' construction
+    scripts keep it; the edit mode highlights interactables under the cursor."""
+    if 'Disguise' not in [str(t) for t in a.tags]:
+        a.tags = list(a.tags) + [unreal.Name('Disguise')]
     m = unreal.load_asset(GREY)
     for c in a.get_components_by_class(unreal.StaticMeshComponent):
         for i in range(max(1, c.get_num_materials())):
@@ -95,7 +98,6 @@ def _pieces():
         e = T.spawn_mover('Enemy', unreal.Vector(x, y, t * T.U), 0.0, lab)
         e.set_editor_property('AggroRadius', 0.0)
         e.set_actor_scale3d(unreal.Vector(*T.L_SCALE))           # same 2x2x1 size as the movable blocks
-        e.tags = list(e.tags) + [unreal.Name('Disguise')]
         _disguise(e)
     cls = unreal.load_asset(MECH_BP).generated_class()
     for lab, kind, (cx, cy), t, yaw, sc, travel, up in MECHS:
@@ -110,7 +112,7 @@ def _pieces():
         _disguise(a)
         a.set_actor_label(lab)
         a.set_folder_path('Mechanisms')
-        a.tags = [unreal.Name('Mechanism')]
+        a.tags = [unreal.Name('Mechanism'), unreal.Name('Disguise')]
     (rc, t) = CHECKPOINT
     x, y = T.cell_ctr(rc, GRID)
     cp = E.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(x, y, t * T.U + 80))
