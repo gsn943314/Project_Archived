@@ -103,7 +103,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - `Stage2` 開啟參數：`BP_PathfindingPlayerController.SkipToStage2` 讓角色從 `StageGoal`（checkpoint）出發、目標換成 Point B、鏡頭用 `StageCam`。
 - `BP_PathfindingPlayerController` BeginPlay 會套用音量；`Esc` 回主選單。
 - 操作：編輯時左鍵拖方塊、在空白處拖曳＝平移畫面（`StartLeftPan`）；滾輪縮放；右鍵左右拖＝繞畫面中心左右旋轉（`bOrbiting`，用 `GetInputMouseDelta`，俯角固定；右鍵按住時游標被 capture，`GetMousePosition` 不會變）；中鍵/方向鍵平移。PLAY 中沒有視角旋轉。
-- 角色 `FollowCameraArm`：第三人稱（長 520、俯角 20°、有延遲平滑）。
+- 角色 `FollowCameraArm`：第三人稱（長 1000、俯角 30°，看得到後面追來的敵人、有延遲平滑）。
 - 坑：**DSL Write 之後不要再呼叫 `compile_blueprint`**（會重複編譯而閃退）；修改 BP 的 class defaults（例如 GameMode 的 PlayerControllerClass）後要 `compile_blueprint` 再存檔，PIE 才會生效。
 
 ## 協作規則
