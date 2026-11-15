@@ -59,7 +59,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - `Content/Python/puzzle_level_tools.py`：`rebuild()` 讀取 `Editor` 資料夾的標記（`PathNode` tag 的 `Path<鏈>_<編號>` 球、`FloorMark` 藍片、`Hole` TargetPoint、`Blocks` 裡的方塊/敵人）重建 `Maze` 資料夾的地形，並移動 Point A/B、調整 NavMesh、`BUILDPATHS`、存檔。
 - **加寬地板**（工具列 **Wide**，`add_wide`）：單一棕色方塊標記（`Editor/Wide`，tag `FloorMark` + `WideMark`），地形和一般 Floor 一樣，用來讓走道看起來更寬。
 - **不相連的節點**：路徑點名稱結尾加 `J`（例如 `PathA_07J`）＝不和上一個節點連成走道（升降台頂端用）。
-- **偽裝 / hover**：Level 2 的方塊、敵人、橋、升降梯帶 tag `Disguise`：編輯器裡保留原本顏色（紫 / 紅 / 木頭橘 / 黃），遊戲中由各藍圖的 `BeginPlay` 換成琥珀色的 `MI_Interactable`（和路面區隔）；編輯模式滑鼠移到 tag `Editable` / `Mechanism` 的東西上會畫白框（`ReceiveTick`）。敵人大小 = 方塊 2×2×1（`L_SCALE`）。
+- **偽裝 / hover**：所有關卡的方塊、敵人方塊、機關（橋、升降梯、門）在編輯器裡保留原本顏色（紫 / 紅 / 木頭橘 / 黃），遊戲中（灰盒階段起）一律由各藍圖的 `BeginPlay` 換成統一的琥珀色 `MI_Interactable`（不再看 `Disguise` tag）；編輯模式滑鼠移到 tag `Editable` / `Mechanism` 的東西上會畫白框（`ReceiveTick`）。敵人大小 = 方塊 2×2×1（`L_SCALE`）。
 - **分段關卡**：tag `StageGoal` 的 actor 是第一段的終點（Level 2 的 checkpoint）。走到後回到灰盒編輯，鏡頭移到 tag `StageCam` 的 TargetPoint，目標換成 Point B（`BP_PathfindingCharacter.FinalTarget`，`BP_PathfindingPlayerController.OnStageCleared`）。注意 `OverviewCamera` 是用 `GetActorOfClass(CameraActor)` 找的，關卡裡只能有一台 CameraActor。
 - **開場對話**（`BP_PathfindingPlayerController.PlayIntro` / `ShowIntroDialogue` / `NextLine`）：關卡裡有 tag `IntroSpot` 的 TargetPoint 時，BeginPlay 不直接進灰盒：Phase 3、隱藏 HUD、最終畫面，Point A 走到該點並轉成它的朝向，畫面下方 `WBP_Dialogue` 依序顯示它的 tag `Say:<文字>`，左鍵下一句，最後一句後回起點並 `EnterPlanning`。
 - **填坑換美術**（`SetViewMode`）：tag `FillSlot` 的 TargetPoint（放在坑的格子中心），attach 在它上面的美術只在「最終畫面且有方塊填進這個坑」時顯示，填坑方塊自己 attach 的美術則隱藏。
