@@ -50,7 +50,7 @@ MECH_BP = '/Game/Project/Programming/Blueprints/Pathfinding/BP_Mechanism'
 MAT = '/Game/Project/Art/Materials/Gimmick/'
 
 
-GREY = '/Game/Project/Art/Materials/MI_MazeWall'
+GREY = '/Game/Project/Art/Materials/MI_MazeFloor'   # light path grey: interactables read as part of the walkway
 
 
 def _disguise(a):
