@@ -4,9 +4,15 @@ Run inside the editor (execute_python / runpy).  Idempotent.
   build()            -> MPC, MF, hooks M_Master + M_PrototypeGrid, enables the wall MIs
   set_target(...)    -> preview helper: writes MPC values in the editor world (not saved)
 
-Masters stay Opaque; the hook is behind a static switch "OcclusionCutout"
-(default off), and only MIs that turn it on override their blend mode to
-Masked.  Floors / stairs / props sharing the same master are untouched.
+The master itself must be Masked: overriding the blend mode on the MI
+(Base Property Overrides) compiles but does not clip in this engine build.
+Both base colour and opacity mask sit behind the static switch
+"OcclusionCutout" (default off -> mask 1), so only the wall MIs that turn it
+on get cut; floors / stairs / props on the same master are never cut.
+
+Do not delete/rebuild the nodes of MF_OcclusionCutout once masters call it:
+the outputs get new ids, the call nodes disconnect and every material using
+the master fails to compile.  build_mf() only refreshes the HLSL then.
 """
 import os
 import unreal
@@ -77,9 +83,19 @@ def _coll(mf, mpc, name, x, y):
 
 def build_mf(mpc):
     mf, created = _get_or_create(MF_PATH, unreal.MaterialFunction, unreal.MaterialFunctionFactoryNew())
-    mel.delete_all_material_expressions_in_function(mf)
     with open(os.path.join(HERE, "Occlusion_Cutout.hlsl"), encoding="utf-8") as f:
         code = f.read()
+    if not created:
+        # Only refresh the HLSL. Rebuilding the nodes would give the outputs new ids
+        # and disconnect every material that calls this function.
+        # node names are not stable (an old rebuild left Custom_1 etc.), update every Custom node
+        for i in range(16):
+            custom = unreal.find_object(mf, "MaterialExpressionCustom_%d" % i)
+            if custom:
+                custom.set_editor_property("code", code)
+        mel.update_material_function(mf)
+        unreal.EditorAssetLibrary.save_loaded_asset(mf)
+        return mf
 
     inp = mel.create_material_expression_in_function(mf, unreal.MaterialExpressionFunctionInput, -900, -300)
     inp.set_editor_property("input_name", "BaseColor")
@@ -176,6 +192,7 @@ def hook_master(path, base_src_name, mf):
     mel.connect_material_expressions(fc, "OpacityMask", sw_m, "True")
     mel.connect_material_expressions(one, "", sw_m, "False")
     mel.connect_material_property(sw_m, "", MP.MP_OPACITY_MASK)
+    mat.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
 
     mel.recompile_material(mat)
     unreal.EditorAssetLibrary.save_loaded_asset(mat)
@@ -187,10 +204,6 @@ def enable_mi(path, on=True):
     if not mi:
         return f"{path}: missing"
     mel.set_material_instance_static_switch_parameter_value(mi, SWITCH, on)
-    ov = mi.get_editor_property("base_property_overrides")
-    ov.set_editor_property("override_blend_mode", on)
-    ov.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED if on else unreal.BlendMode.BLEND_OPAQUE)
-    mi.set_editor_property("base_property_overrides", ov)
     mel.update_material_instance(mi)
     unreal.EditorAssetLibrary.save_loaded_asset(mi)
     return f"{path}: {'on' if on else 'off'}"
