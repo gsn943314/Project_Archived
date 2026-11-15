@@ -97,7 +97,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 
 ## 小狐外觀進度（`/Game/Dev/Blueprints/BP_FoxLook`，feature/fox-look）
 - 由 `BP_PathfindingGameMode` BeginPlay 生成，不改小狐 / 控制器藍圖。Stage：0 灰模（無動畫）→ 1 白模（有動畫）→ 2 原貼圖。
-- Level0 = 0；Level1 = 0，小狐走到石碑（網格名含 "Monument"）450 cm 內 → 1；Level2 = 1（`?Stage2` 為 2），走到 `StageGoal`（Checkpoint_Shrine）→ 2；其他地圖 = 2。
+- Level0 = 0；Level1 = 0，石碑（網格名含 "Monument"）→ 1：運行中小狐離出口（`NextLevel`）9 m 內時，把小狐 `Hops` 剩下的路線換成「NavMesh 走到石碑朝出口側 2.5 m 的站位點 → 直接走到路線終點」，到站位點觸發演出（算不出路時退回：離出口 5 m 內觸發；RESET 回起點會重新啟用）；Level2 = 1（`?Stage2` 為 2），走到 `StageGoal`（Checkpoint_Shrine）→ 2；其他地圖 = 2。
 - 灰模：真網格隱藏，`StatueMesh`（PoseableMesh）掛在網格上，開局 0.2 s 複製待機姿勢後定格（角色 Tick 每幀重播動畫，關 Tick 壓不住）。材質 `/Game/Dev/Materials/FoxLook/M_FoxClay`、`M_FoxWhite`。
 - 觸發時「資產修復」演出：小狐停下、轉向觸發物，追擊者 CustomTimeDilation 0；`WBP_Dialogue` 逐句顯示（系統行綠字、小狐白字），含 "Reloading" 的系統行帶進度條，期間新舊外觀閃爍，結束時定為新外觀並閃暖光；播完若原本在走且 Phase == 1 則繼續走。
 - 台詞：觸發物上的 `Say:<文字>` tag 覆蓋預設，`Say:SYS:<文字>` 為系統行；沒有 tag 時用藍圖內英文預設。
