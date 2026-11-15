@@ -77,6 +77,21 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
   2. **`MF_OcclusionCutout` 被母材質引用後不要刪掉節點重建**：輸出會換 id，母材質的連線全部斷掉、所有用它的材質編譯失敗。`build_mf()` 對已存在的函式只更新 HLSL。
   3. Python 裡 `UKismetMaterialLibrary` 叫 `unreal.MaterialLibrary`（Kismet 前綴會被去掉）。
 
+## Gizmo 提示圖標（Fake Widget）
+
+- **做什麼**：編輯階段（Phase 0）滑鼠懸停時，在可操作的東西上顯示 3D 編輯器手柄風格的圖標，永遠畫在場景最上層、不擋點擊、不轉向。
+  - 方塊（tag `Editable`）→ 移動（平躺在頂面；拖曳時跟著方塊）
+  - 旋轉橋 / 單向門（`BP_Mechanism` Kind 1 / 2）→ 旋轉（平躺；門放在鉸鍊）
+  - 升降梯（Kind 0）→ 升降（直立在平台上方；`bCurUp` 時翻轉，亮的箭頭指向下一步要去的方向）
+  - 終點（角色的 `FinalTarget`，沒有就用 `TargetPoint`）→ 出口（滑鼠在終點 300 cm 內才顯示）
+- **程式**：全部在 `/Game/Dev/Blueprints/BP_GizmoDirector`（每幀讀 `BP_PathfindingPlayerController` 的 `Phase` / `bDragging` / `Selected` 與游標下的物件，自己生成、擺放圖標）。技術藍圖只改了一處：`BP_PathfindingPlayerController.ReceiveBeginPlay` 最後 spawn 這個 director。拿掉那一行就整個關掉。
+- **大小 / 朝向**：`IconScale`（BeginPlay 設 8，出口 ×1.6）。直立圖標朝 `FaceDir`＝開局時總覽鏡頭的反方向，之後固定不轉。
+- **美術**：模型 `/Game/Dev/Meshes/UI/SM_Gizmo*`（材質槽 `IceFace` / `LilacSide` / `LilacDim`）。材質 `/Game/Dev/Materials/Gizmo/`：
+  - `M_Gizmo`：Translucent + Unlit + **Disable Depth Test**（畫在最上層）+ Translucency Pass **After Motion Blur**（避開水彩後處理，不會被洗淡）。`MI_Gizmo_Face` / `Edge` / `Dim` 是正面 / 側面 / 升降的暗箭頭。
+  - Custom Primitive Data 第 0 位 `Dim`：0 = 亮、1 = 暗。
+  - `M_Gizmo_Scene` + `MI_Gizmo_*_Scene`：同樣但會被場景遮擋（給貼地圖標用；目前沒用到，落點 `SM_GizmoDrop`、存檔 `SM_GizmoCheckpoint` 試過後先拿掉）。改顏色要兩套一起改。
+- **限制**：畫在後處理之後，所以沒有 bloom 光暈、邊緣沒有抗鋸齒。
+
 ## 用 MCP 改東西時的經驗（踩過的坑）
 
 1. **不要在 `execute_python` 裡切換關卡**（`load_level`）— 會讓 Editor 閃退。改用 `EditorToolset.LevelToolset.LoadLevel` 工具，且單獨一次呼叫。
