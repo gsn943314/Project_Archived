@@ -97,7 +97,7 @@ def _pieces():
         a.tags = [unreal.Name('Mechanism')]
     (rc, t) = CHECKPOINT
     x, y = T.cell_ctr(rc, GRID)
-    cp = E.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(x + 110, y + 110, t * T.U + 80))
+    cp = E.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(x, y, t * T.U + 80))
     smc = cp.static_mesh_component
     smc.set_static_mesh(unreal.load_asset('/Engine/BasicShapes/Cylinder'))
     smc.set_material(0, unreal.load_asset(MAT + 'MI_G_PlateOn'))
@@ -107,20 +107,35 @@ def _pieces():
     cp.set_actor_scale3d(unreal.Vector(0.5, 0.5, 1.6))
     cp.set_actor_label('Checkpoint_Shrine')
     cp.set_folder_path('Mechanisms')
-    cp.tags = [unreal.Name('Checkpoint')]
+    cp.tags = [unreal.Name('Checkpoint'), unreal.Name('StageGoal')]     # goal of stage 2-1, then B
+
+
+STAGE_VIEWS = [((2800, 1925, 300)), ((3150, 5250, 1100))]   # look-at points: stage 2-1, stage 2-2
+CAM_OFFSET = (-600, -3600, 3800)
+
+
+def _cam_at(look):
+    look = unreal.Vector(*look)
+    cam = look + unreal.Vector(*CAM_OFFSET)
+    return cam, unreal.MathLibrary.find_look_at_rotation(cam, look)
 
 
 def _camera():
+    """OverviewCamera frames stage 2-1; a TargetPoint tagged StageCam holds the view of 2-2 (used after the checkpoint)."""
     acts = {a.get_actor_label(): a for a in T._actors()}
-    cols = [n[0][1] for n in CHAIN_A + CHAIN_B]
-    rows = [n[0][0] for n in CHAIN_A + CHAIN_B]
-    look = unreal.Vector((min(cols) + max(cols) + 1) * T.C / 2, (min(rows) + max(rows) + 1) * T.C / 2 - 600, 350)
-    cam = unreal.Vector(look.x - 2500, look.y - 7600, look.z + 8200)
-    rot = unreal.MathLibrary.find_look_at_rotation(cam, look)
+    cam, rot = _cam_at(STAGE_VIEWS[0])
     if 'OverviewCamera' in acts:
         acts['OverviewCamera'].set_actor_location(cam, False, False)
         acts['OverviewCamera'].set_actor_rotation(rot, False)
     unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).set_level_viewport_camera_info(cam, rot)
+    for a in list(T._actors()):
+        if a.get_actor_label() == 'StageCam_2_2':
+            T._eas().destroy_actor(a)
+    cam2, rot2 = _cam_at(STAGE_VIEWS[1])
+    sc = T._eas().spawn_actor_from_class(unreal.TargetPoint, cam2, rot2)
+    sc.set_actor_label('StageCam_2_2')
+    sc.set_folder_path('Mechanisms')
+    sc.tags = [unreal.Name('StageCam')]
 
 
 def build(art=True):
