@@ -1,8 +1,9 @@
 // =====================================================================
 // Storybook Gouache PP - Pass B (Scene Color After DOF, HDR, render res,
 // BEFORE TSR - so temporal upscaling resolves line / edge jitter)
-//   0. Solid background: sky + any actor with Render CustomDepth on
+//   0. Solid background: sky + any actor with Render CustomDepth on and stencil 0
 //      (Maze_Backdrop) filled with BackgroundColor * BackgroundExposure
+//      (stencil > 0 is used by the comic glitch object tear, not backdrop)
 //   1. Generalized Kuwahara (8 sectors, polynomial weights): flattens
 //      texture detail into paint patches, radius grows with depth
 //   2. Colored brush outlines drawn on the flattened paint
@@ -61,6 +62,8 @@ if (DebugMode > 2.5) return SceneTextureLookup(uvC, 14, false).rgb * preExp;    
 // anti-aliased and stable.
 float cd = CustomDepth.r;
 float backdrop = (1.0 - smoothstep(0.003, 0.02, (cd - z) / max(z, 1.0))) * step(cd, 1000000.0);
+// custom depth written with a stencil value (comic glitch objects, BPC_AssetReload) is not backdrop
+backdrop *= 1.0 - step(0.5, Stencil.r);
 float bgMask = saturate(max(backdrop, sky * SkyIsBackground) * BackgroundAmount);
 float3 bgHDR = max(BackgroundColor.rgb, 0.0) * BackgroundExposure;
 if (bgMask > 0.999 && DebugMode < 0.5)
