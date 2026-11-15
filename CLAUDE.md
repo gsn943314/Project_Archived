@@ -28,7 +28,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | 藍圖 | 職責 |
 |------|------|
 | `BP_PathfindingPlayerController` | 編輯操作、`DropFiller`/`ComputeDrop`（落點預覽與放置）、相機平移縮放、Phase 狀態機、HUD |
-| `BP_PathfindingCharacter` | 主角，`StartRun` 用 NavMesh 走向 B。模型是狐狸 `SK_Fox`（`/Game/Project/Art/Characters/Fox/`，scale 1.8），`Tick` 裡的動畫狀態機：0 idle / 1 walk（速度 < 250）/ 2 run / 3 倒地（`KnockDown`，被抓時由 `OnCaught` 呼叫，2 秒後 `ResetToStart`）；用 `PlayAnimation` 單節點播放、動畫一律 1 倍速播放（跑步用 `A_Fox_FastRun`，步伐約 360 cm/s，所以角色 MaxWalkSpeed = 360；加速播放頭會狂晃），走路 / 跑步是原地版本（in place），Enable Root Motion 與 Force Root Lock 都關閉 |
+| `BP_PathfindingCharacter` | 主角，`StartRun` 用 NavMesh 走向 B。模型是狐狸 `SK_Fox`（`/Game/Project/Art/Characters/Fox/`，scale 1.8），`Tick` 裡的動畫狀態機：0 idle / 1 walk（速度 < 250）/ 2 run / 3 倒地（`KnockDown`，被抓時由 `OnCaught` 呼叫，2 秒後 `ResetToStart`）；用 `PlayAnimation` 單節點播放、動畫一律 1 倍速播放（跑步用 `A_Fox_FastRun`，步伐約 360 cm/s，角色 MaxWalkSpeed = 500；加速播放頭會狂晃），走路 / 跑步是原地版本（in place），Enable Root Motion 與 Force Root Lock 都關閉 |
 | `BP_EditableObstacle` | 可拖曳方塊（紫色） |
 | `BP_EnemyBlock` | 敵人方塊（紅色），PLAY 時若在路上會變成 `BP_EnemyChaser`；`AggroRadius` 0 = 永遠追 |
 | `BP_EnemyChaser` | 追擊者（速度 620），碰到主角 → `OnCaught` |
