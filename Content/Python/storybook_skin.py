@@ -15,6 +15,18 @@ MAT = {'Maze_Path': '/Game/Dev/Materials/MI_PavingD',
        'Maze_Wall': '/Game/Dev/Materials/MI_GrassTopSoilSides'}
 
 
+PLAZA = '/Game/Dev/Materials/MI_PavingC'   # big checker paving: cells listed in the Editor_Grid tag `PavingC:r3_c4,r4_c5,...`
+
+
+def _plaza_cells():
+    g = [a for a in T._actors() if a.get_actor_label() == 'Editor_Grid']
+    for t in (g[0].tags if g else []):
+        t = str(t)
+        if t.startswith('PavingC:'):
+            return set(t[8:].split(','))
+    return set()
+
+
 def enabled():
     g = [a for a in T._actors() if a.get_actor_label() == 'Editor_Grid']
     return bool(g) and 'StorybookSkin' in [str(t) for t in g[0].tags]
@@ -34,6 +46,7 @@ def apply():
         if T._folder(a) == FOLDER:
             E.destroy_actor(a)
     mats = {k: unreal.load_asset(p) for k, p in MAT.items()}
+    plaza, pm = _plaza_cells(), unreal.load_asset(PLAZA)
     n = 0
     for a in list(T._actors()):
         if T._folder(a) != 'Maze' or not isinstance(a, unreal.StaticMeshActor):
@@ -51,7 +64,8 @@ def apply():
         s = E.spawn_actor_from_class(unreal.StaticMeshActor, a.get_actor_location(), a.get_actor_rotation())
         c = s.static_mesh_component
         c.set_static_mesh(src.static_mesh)
-        c.set_material(0, mats[k])
+        cell = '_'.join(a.get_actor_label().split('_')[2:4])
+        c.set_material(0, pm if k == 'Maze_Path' and cell in plaza else mats[k])
         c.set_collision_profile_name('NoCollision')
         c.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
         c.set_editor_property('can_ever_affect_navigation', False)
