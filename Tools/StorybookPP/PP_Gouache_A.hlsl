@@ -57,6 +57,13 @@ if (DebugMode > 1.5)
 float3 rampTint = lerp(ShadowTint.rgb, LitTint.rgb, tone);
 rampTint = lerp(rampTint, HighlightTint.rgb, hiTone * HighlightAmount);
 float3 painted = alb * rampTint * LitLevel;
+// Keep the hue of strongly coloured local lights (portal glow, torches). Sun / sky / GI are
+// near-neutral after dividing by albedo, so they stay fully on the ramp tints.
+float3 lightRGB = scene / max(alb + 0.04, 1e-3);
+float  lMax     = max(lightRGB.r, max(lightRGB.g, lightRGB.b));
+float  lSat     = (lMax - min(lightRGB.r, min(lightRGB.g, lightRGB.b))) / max(lMax, 1e-4);
+float3 lChroma  = lightRGB / max(G.Lum(lightRGB), 1e-4);
+painted *= lerp(1.0.xxx, lChroma, smoothstep(0.25, 0.55, lSat) * LightColorKeep);
 float3 col = lerp(scene, painted, saturate(valid * (1.0 - emissive) * RampAmount));
 
 // ---------------------------------------------------------------- 2. grade
