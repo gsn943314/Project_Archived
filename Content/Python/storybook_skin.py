@@ -78,3 +78,17 @@ def apply():
     import view_mode as V
     V.set_view(V._S['final'])
     return n
+
+
+def maze_grey_only():
+    """Editor_Grid tag `MazeGreyOnly` (hand-dressed levels whose art already shows the ground, e.g. Lvl_Level0_Davidtesting):
+    every Maze cube is grey-box only (VisGrey); collision / NavMesh still come from them."""
+    g = [a for a in T._actors() if a.get_actor_label() == 'Editor_Grid']
+    if not g or 'MazeGreyOnly' not in [str(t) for t in g[0].tags]:
+        return 0
+    n = 0
+    for a in T._actors():
+        if T._folder(a) == 'Maze' and 'VisGrey' not in [str(t) for t in a.tags]:
+            a.tags = list(a.tags) + [unreal.Name('VisGrey')]
+            n += 1
+    return n

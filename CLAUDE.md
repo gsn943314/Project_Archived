@@ -18,6 +18,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | `Lvl_BlockTutorial_V2` | 舊版生成器（3 條來回走道、爬 2 階，seed 11） |
 | `Lvl_BlockTutorial_V5_Art` | V5 套用 MegaJam 美術（`/Game/Dev/Meshes`），每階 175 cm（樓梯模型高度壓成 0.5） |
 | `Lvl_Level2` | Level 2（Forgotten Wilds / Hollow Shrine，`level2_build.py` 生成；改版面改那支檔再 `build()`）：2-1 右邊填洞＋旋轉橋＋3 階樓梯、左邊填洞＋野獸（箱子擋門）＋水車升降梯（3 階，開場在上面）→ Checkpoint → 2-2 填洞、旋轉橋、守衛在高台（它的升降梯留在上面它就會坐下來攻擊）、填洞、升降梯（3 階）上到 B。16×20 格、8 階 |
+| `Lvl_Level0_Davidtesting` | Level 0（複製自組員的 `/Game/Dev/Lvl_Level0_Storybook`，手擺美術）：開場狐狸走到佈告欄（TargetPoint `IntroSpot`）看對話，點完進灰盒；直線路徑 → 3 格斷崖坑（`FillSlot_c4/5/6`）→ 樓梯 → 傳送門。3 個方塊上掛直立的石頭（Placement1），填進坑後最終畫面換成躺平的石橋（Placement2）。`Editor_Grid` tag `MazeGreyOnly`（Maze 只在灰盒顯示，美術地台＝最終畫面）；這關走道只有一格寬，`RecastNavMesh` 半徑用 35（120 會把走道侵蝕光） |
 | `Lvl_BlockTutorial_V3/V4/V5` | 新版生成器：蜿蜒折線路徑、約 10 階高低差（seed 33/55/77） |
 | `Lvl_Terraces` | S 型往上爬的梯田關，含所有機關 |
 | `Lvl_PathfindingPuzzle` | 最早的平面原型，含所有機關 |
@@ -59,6 +60,8 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - **不相連的節點**：路徑點名稱結尾加 `J`（例如 `PathA_07J`）＝不和上一個節點連成走道（升降台頂端用）。
 - **偽裝 / hover**：Level 2 的方塊、敵人、橋、升降梯帶 tag `Disguise`：編輯器裡保留原本顏色（紫 / 紅 / 木頭橘 / 黃），遊戲中由各藍圖的 `BeginPlay` 換成琥珀色的 `MI_Interactable`（和路面區隔）；編輯模式滑鼠移到 tag `Editable` / `Mechanism` 的東西上會畫白框（`ReceiveTick`）。敵人大小 = 方塊 2×2×1（`L_SCALE`）。
 - **分段關卡**：tag `StageGoal` 的 actor 是第一段的終點（Level 2 的 checkpoint）。走到後回到灰盒編輯，鏡頭移到 tag `StageCam` 的 TargetPoint，目標換成 Point B（`BP_PathfindingCharacter.FinalTarget`，`BP_PathfindingPlayerController.OnStageCleared`）。注意 `OverviewCamera` 是用 `GetActorOfClass(CameraActor)` 找的，關卡裡只能有一台 CameraActor。
+- **開場對話**（`BP_PathfindingPlayerController.PlayIntro` / `ShowIntroDialogue` / `NextLine`）：關卡裡有 tag `IntroSpot` 的 TargetPoint 時，BeginPlay 不直接進灰盒：Phase 3、隱藏 HUD、最終畫面，Point A 走到該點並轉成它的朝向，畫面下方 `WBP_Dialogue` 依序顯示它的 tag `Say:<文字>`，左鍵下一句，最後一句後回起點並 `EnterPlanning`。
+- **填坑換美術**（`SetViewMode`）：tag `FillSlot` 的 TargetPoint（放在坑的格子中心），attach 在它上面的美術只在「最終畫面且有方塊填進這個坑」時顯示，填坑方塊自己 attach 的美術則隱藏。
 - **Checkpoint**：tag `Checkpoint` 的 actor；角色經過（2D 260 cm 內）時把它存成新的起點，被抓或 RESET 後從這裡重來（`BP_PathfindingCharacter` Tick）。
 - 相鄰兩個節點高度不同 → 中間自動放樓梯（需要足夠的直線格，不夠會出現警告）。方塊/敵人在牆上 → 自動挖凹槽。
 - 格子原點存在 `Editor_Grid` actor。生成器也是先放標記再呼叫 `rebuild()`，所以 V3/V4/V5 與新生成的關卡都能直接編輯；`Lvl_BlockTutorial`、`V2` 沒有標記。
