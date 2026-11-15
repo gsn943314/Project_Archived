@@ -497,6 +497,11 @@ def rebuild(save=True, navmesh=True):
             nav.set_actor_scale3d(sc)
     if navmesh:
         unreal.SystemLibrary.execute_console_command(_world(), 'BUILDPATHS')
+    try:
+        import route_steps
+        route_steps.build()     # route progress points for blocked runs (BP_PathfindingCharacter.StartRun)
+    except Exception as e:
+        unreal.log_warning(f'[route_steps] {e}')
     if save:
         unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
     return {'warnings': [w[1] for w in warns], 'warn_cells': warns, 'carved': len(carved), 'tiers': int(top_h / U),
