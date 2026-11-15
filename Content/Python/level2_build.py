@@ -5,40 +5,46 @@ Apply Art. Run with the level open:  import level2_build as L2; L2.build()
 Grid: row -> +Y (away from the camera), col -> +X. The overview camera looks toward +Y, so a HIGH column is on
 the LEFT of the screen. Tiers are 175 cm.
 
-2-1  A -> junction. Right (low X): crate on the trail, fill-hole, ROTATING BRIDGE over the river, stairs up.
-     Left (high X): fill-hole, forest BEAST in a side pocket (plug its door with the crate), WATERWHEEL LIFT.
-     Both meet at the CHECKPOINT.
-2-2  fill-hole, stairs, RING BRIDGE over a river, GUARDIAN pocket (plug with the monolith), SHRINE PLATFORM
-     (lift) up to B.
+2-1  A -> junction. Right (low X): crate on the trail, fill-hole, ROTATING BRIDGE over a 2-cell river, 3-tier stairs.
+     Left (high X): fill-hole, forest BEAST in a side pocket (plug its door with the crate), WATERWHEEL LIFT (3 tiers,
+     starts at the top: click it down to the player's floor). Both meet at the CHECKPOINT (tier 3).
+2-2  fill-hole, stairs to tier 5, RING BRIDGE over a 2-cell river, GUARDIAN on a ledge (tier 7) whose lift starts at
+     the top - left there, the guardian rides down and attacks; clicked down, it is trapped -, fill-hole,
+     SHRINE LIFT (3 tiers, starts at the top) up to tier 8 and B.
+Lifts: a click moves the resting lift to its other stop; in PLAY a character (Point A or an enemy) that stops on it
+is carried to the other stop.
 """
 import unreal
 import puzzle_level_tools as T
 
 GRID = (0.0, 0.0)
 # (cell, tier[, 'J' = not connected to the previous node])
-CHAIN_A = [((0, 7), 0), ((2, 7), 0), ((2, 2), 0), ((5, 2), 0), ((8, 2), 2), ((9, 2), 2), ((9, 7), 2),
-           ((11, 7), 2), ((11, 3), 2), ((13, 3), 2), ((16, 3), 3), ((16, 11), 3), ((16, 13), 5, 'J'),
-           ((14, 13), 5)]
-CHAIN_B = [((2, 7), 0), ((2, 12), 0), ((5, 12), 0), ((7, 12), 2, 'J'), ((9, 12), 2), ((9, 7), 2)]
+CHAIN_A = [((0, 7), 0), ((2, 7), 0), ((2, 2), 0), ((6, 2), 0), ((10, 2), 3), ((10, 7), 3),
+           ((12, 7), 3), ((12, 3), 3), ((16, 3), 5), ((16, 12), 5), ((16, 14), 8, 'J'), ((19, 14), 8),
+           ((19, 11), 8)]
+CHAIN_B = [((2, 7), 0), ((2, 12), 0), ((5, 12), 0), ((7, 12), 3, 'J'), ((10, 12), 3), ((10, 7), 3)]
 FLOORS = {(6, 12): 0, (4, 13): 0, (4, 14): 0,            # waterwheel lift cell, beast door + den
-          (1, 4): 0, (1, 10): 0, (12, 5): 2,             # fill-block pockets
-          (16, 12): 3, (15, 9): 3, (14, 9): 3, (17, 8): 3}  # shrine platform, guardian door + den, monolith spot
-HOLES = {(2, 4): 0, (2, 10): 0, (11, 5): 2,              # fill holes
-         (4, 1): 0, (4, 2): 0, (4, 3): 0,                # lower river (bridge on (4, 2))
-         (15, 6): 3, (16, 6): 3, (17, 6): 3}             # upper river (ring bridge on (16, 6))
+          (1, 4): 0, (1, 10): 0, (13, 5): 3, (15, 11): 5,  # fill-block pockets
+          (17, 8): 5, (18, 8): 7, (18, 9): 7,            # guardian lift cell (bottom), guardian ledge
+          (16, 13): 5}                                   # shrine lift cell (bottom)
+HOLES = {(2, 4): 0, (2, 10): 0, (12, 5): 3, (16, 11): 5,  # fill holes
+         **{(r, c): 0 for r in (4, 5) for c in (1, 2, 3)},          # lower river, 2 cells wide
+         **{(r, c): 5 for r in (15, 16, 17) for c in (5, 6)}}       # upper river, 2 cells wide
 BLOCKS = [('Block_Crate', 'L', (2, 5), 0), ('Block_Fill_R', 'L', (1, 4), 0), ('Block_Fill_L', 'L', (1, 10), 0),
-          ('Block_Fill_Shrine', 'L', (12, 5), 2), ('Block_Monolith', 'L', (17, 8), 3)]
-ENEMIES = [('Enemy_Beast', (4, 14), 0), ('Enemy_Guardian', (14, 9), 3)]
-# label, kind (0 lift / 1 bridge), cell, tier, yaw, scale
-MECHS = [('Mech_Bridge_Lower', 1, (4, 2), 0, 0.0, (6.0, 3.0, 0.2)),      # long axis X: needs a turn to span Y
-         ('Mech_Bridge_Ring', 1, (16, 6), 3, 90.0, (6.0, 3.0, 0.2)),      # long axis Y: needs a turn to span X
-         ('Mech_Lift_Waterwheel', 0, (6, 12), 0, 0.0, (3.3, 3.3, 0.2)),
-         ('Mech_Platform_Shrine', 0, (16, 12), 3, 0.0, (3.3, 3.3, 0.2))]
-CHECKPOINT = ((9, 7), 2)
-# the solution (used by the PIE test): block -> cell / tier, mechanisms to click
-SOLUTION = {'blocks': {'Block_Crate': ((4, 13), 0), 'Block_Fill_R': ((2, 4), -1), 'Block_Fill_Shrine': ((11, 5), 1),
-                       'Block_Monolith': ((15, 9), 3)},
-            'clicks': ['Mech_Bridge_Lower', 'Mech_Bridge_Ring', 'Mech_Platform_Shrine']}
+          ('Block_Fill_Shrine', 'L', (13, 5), 3), ('Block_Fill_Ledge', 'L', (15, 11), 5)]
+ENEMIES = [('Enemy_Beast', (4, 14), 0), ('Enemy_Guardian', (18, 9), 7)]
+# label, kind (0 lift / 1 bridge), centre (x, y) in cells (.5 = cell centre), bottom tier, yaw, scale,
+# travel (cm), starts at the top
+MECHS = [('Mech_Bridge_Lower', 1, (2.5, 5.0), 0, 0.0, (10.5, 3.0, 0.2), 0, False),   # spans X: turn to cross rows 4-5
+         ('Mech_Bridge_Ring', 1, (6.0, 16.5), 5, 90.0, (10.5, 3.0, 0.2), 0, False),  # spans Y: turn to cross cols 5-6
+         ('Mech_Lift_Waterwheel', 0, (12.5, 6.5), 0, 0.0, (3.3, 3.3, 0.2), 525, True),
+         ('Mech_Lift_Guardian', 0, (8.5, 17.5), 5, 0.0, (3.3, 3.3, 0.2), 350, True),
+         ('Mech_Lift_Shrine', 0, (13.5, 16.5), 5, 0.0, (3.3, 3.3, 0.2), 525, True)]
+CHECKPOINT = ((10, 7), 3)
+# the solution (used by the PIE test): block -> (cell, tier the block stands on), mechanisms to click
+SOLUTION = {'blocks': {'Block_Crate': ((4, 13), 0), 'Block_Fill_R': ((2, 4), -1), 'Block_Fill_Shrine': ((12, 5), 2),
+                       'Block_Fill_Ledge': ((16, 11), 4)},
+            'clicks': ['Mech_Bridge_Lower', 'Mech_Bridge_Ring', 'Mech_Lift_Guardian', 'Mech_Lift_Shrine']}
 
 MECH_BP = '/Game/Project/Programming/Blueprints/Pathfinding/BP_Mechanism'
 MAT = '/Game/Project/Art/Materials/Gimmick/'
@@ -74,14 +80,15 @@ def _pieces():
         x, y = T.cell_ctr(rc, GRID)
         T.spawn_mover('Enemy', unreal.Vector(x, y, t * T.U), 0.0, lab).set_editor_property('AggroRadius', 0.0)
     cls = unreal.load_asset(MECH_BP).generated_class()
-    for lab, kind, rc, t, yaw, sc in MECHS:
-        x, y = T.cell_ctr(rc, GRID)
-        z = t * T.U - (18 if kind == 0 else 0)          # lift top flush with the floor (walls stay out of step reach)
+    for lab, kind, (cx, cy), t, yaw, sc, travel, up in MECHS:
+        x, y = GRID[0] + cx * T.C, GRID[1] + cy * T.C
+        z = t * T.U - (18 + 0 if kind == 0 else 0) + (travel if up else 0)   # lift top flush with its floor
         a = E.spawn_actor_from_class(cls, unreal.Vector(x, y, z), unreal.Rotator(0, 0, yaw))
         a.root_component.set_mobility(unreal.ComponentMobility.MOVABLE)
         a.set_actor_scale3d(unreal.Vector(*sc))
         a.set_editor_property('Kind', kind)
-        a.set_editor_property('Travel', 350.0)
+        a.set_editor_property('Travel', float(travel or 350))
+        a.set_editor_property('bUp', bool(up))
         m = unreal.load_asset(MAT + ('MI_G_Wood' if kind == 1 else 'MI_G_Plate'))
         for c in a.get_components_by_class(unreal.StaticMeshComponent):
             c.set_material(0, m)
@@ -108,7 +115,7 @@ def _camera():
     cols = [n[0][1] for n in CHAIN_A + CHAIN_B]
     rows = [n[0][0] for n in CHAIN_A + CHAIN_B]
     look = unreal.Vector((min(cols) + max(cols) + 1) * T.C / 2, (min(rows) + max(rows) + 1) * T.C / 2 - 600, 350)
-    cam = unreal.Vector(look.x - 2000, look.y - 6200, look.z + 6400)
+    cam = unreal.Vector(look.x - 2500, look.y - 7600, look.z + 8200)
     rot = unreal.MathLibrary.find_look_at_rotation(cam, look)
     if 'OverviewCamera' in acts:
         acts['OverviewCamera'].set_actor_location(cam, False, False)
