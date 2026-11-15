@@ -50,6 +50,18 @@ MECH_BP = '/Game/Project/Programming/Blueprints/Pathfinding/BP_Mechanism'
 MAT = '/Game/Project/Art/Materials/Gimmick/'
 
 
+GREY = '/Game/Project/Art/Materials/MI_MazeWall'
+
+
+def _disguise(a):
+    """Grey box view: every interactable piece looks like plain grey terrain (no purple / red / orange / yellow);
+    the player finds them by hovering (the edit mode highlights interactables under the cursor)."""
+    m = unreal.load_asset(GREY)
+    for c in a.get_components_by_class(unreal.StaticMeshComponent):
+        for i in range(max(1, c.get_num_materials())):
+            c.set_material(i, m)
+
+
 def _clear():
     T.clear_all()
     E = T._eas()
@@ -75,10 +87,16 @@ def _pieces():
     E = T._eas()
     for lab, kind, rc, t in BLOCKS:
         x, y = T.cell_ctr(rc, GRID)
-        T.attach_crate(T.spawn_mover(kind, unreal.Vector(x, y, t * T.U), 0.0, lab))
+        b = T.spawn_mover(kind, unreal.Vector(x, y, t * T.U), 0.0, lab)
+        T.attach_crate(b)
+        _disguise(b)
     for lab, rc, t in ENEMIES:
         x, y = T.cell_ctr(rc, GRID)
-        T.spawn_mover('Enemy', unreal.Vector(x, y, t * T.U), 0.0, lab).set_editor_property('AggroRadius', 0.0)
+        e = T.spawn_mover('Enemy', unreal.Vector(x, y, t * T.U), 0.0, lab)
+        e.set_editor_property('AggroRadius', 0.0)
+        e.set_actor_scale3d(unreal.Vector(*T.L_SCALE))           # same 2x2x1 size as the movable blocks
+        e.tags = list(e.tags) + [unreal.Name('Disguise')]
+        _disguise(e)
     cls = unreal.load_asset(MECH_BP).generated_class()
     for lab, kind, (cx, cy), t, yaw, sc, travel, up in MECHS:
         x, y = GRID[0] + cx * T.C, GRID[1] + cy * T.C
@@ -89,9 +107,7 @@ def _pieces():
         a.set_editor_property('Kind', kind)
         a.set_editor_property('Travel', float(travel or 350))
         a.set_editor_property('bUp', bool(up))
-        m = unreal.load_asset(MAT + ('MI_G_Wood' if kind == 1 else 'MI_G_Plate'))
-        for c in a.get_components_by_class(unreal.StaticMeshComponent):
-            c.set_material(0, m)
+        _disguise(a)
         a.set_actor_label(lab)
         a.set_folder_path('Mechanisms')
         a.tags = [unreal.Name('Mechanism')]
