@@ -97,18 +97,25 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 
 ## Gizmo 提示圖標（Fake Widget）
 
-- **做什麼**：編輯階段（Phase 0）滑鼠懸停時，在可操作的東西上顯示 3D 編輯器手柄風格的圖標，永遠畫在場景最上層、不擋點擊、不轉向。
+- **做什麼**：編輯階段（Phase 0）滑鼠懸停時，在可操作的東西上顯示 3D 編輯器手柄風格的圖標，永遠畫在場景最上層、不擋點擊。
   - 方塊（tag `Editable`）→ 移動（平躺在頂面；拖曳時跟著方塊）
   - 旋轉橋 / 單向門（`BP_Mechanism` Kind 1 / 2）→ 旋轉（平躺；門放在鉸鍊）
   - 升降梯（Kind 0）→ 升降（直立在平台上方；`bCurUp` 時翻轉，亮的箭頭指向下一步要去的方向）
   - 終點（角色的 `FinalTarget`，沒有就用 `TargetPoint`）→ 出口（滑鼠在終點 300 cm 內才顯示）
-- **程式**：全部在 `/Game/Dev/Blueprints/BP_GizmoDirector`（每幀讀 `BP_PathfindingPlayerController` 的 `Phase` / `bDragging` / `Selected` 與游標下的物件，自己生成、擺放圖標）。技術藍圖只改了一處：`BP_PathfindingPlayerController.ReceiveBeginPlay` 最後 spawn 這個 director。拿掉那一行就整個關掉。
-- **大小 / 朝向**：`IconScale`（BeginPlay 設 8，出口 ×1.6）。直立圖標朝 `FaceDir`＝開局時總覽鏡頭的反方向，之後固定不轉。
+- **程式**：全部在 `/Game/Project/Programming/Blueprints/Pathfinding/BP_GizmoDirector`（複製自組員的 `/Game/Dev/Blueprints/BP_GizmoDirector`，Dev 原版不動；每幀讀 `BP_PathfindingPlayerController` 的 `Phase` / `bDragging` / `Selected` 與游標下的物件，自己生成、擺放圖標）。技術藍圖只改了一處：`BP_PathfindingPlayerController.ReceiveBeginPlay` 最後 spawn 這個 director。拿掉那一行就整個關掉。
+- **大小 / 朝向**：`IconScale`（BeginPlay 設 8，出口 ×1.6）。直立圖標（升降、出口）朝 `FaceDir`＝每幀依玩家目前鏡頭（`GetPlayerCameraManager.GetCameraRotation`）的水平反方向重算，旋轉 / 平移視角時會跟著轉向鏡頭；平躺的移動 / 旋轉圖標不受影響。
 - **美術**：模型 `/Game/Dev/Meshes/UI/SM_Gizmo*`（材質槽 `IceFace` / `LilacSide` / `LilacDim`）。材質 `/Game/Dev/Materials/Gizmo/`：
   - `M_Gizmo`：Translucent + Unlit + **Disable Depth Test**（畫在最上層）+ Translucency Pass **After Motion Blur**（避開水彩後處理，不會被洗淡）。`MI_Gizmo_Face` / `Edge` / `Dim` 是正面 / 側面 / 升降的暗箭頭。
   - Custom Primitive Data 第 0 位 `Dim`：0 = 亮、1 = 暗。
   - `M_Gizmo_Scene` + `MI_Gizmo_*_Scene`：同樣但會被場景遮擋（給貼地圖標用；目前沒用到，落點 `SM_GizmoDrop`、存檔 `SM_GizmoCheckpoint` 試過後先拿掉）。改顏色要兩套一起改。
 - **限制**：畫在後處理之後，所以沒有 bloom 光暈、邊緣沒有抗鋸齒。
+
+## 小狐外觀進度（`/Game/Dev/Blueprints/BP_FoxLook`，feature/fox-look）
+- 由 `BP_PathfindingGameMode` BeginPlay 生成，不改小狐 / 控制器藍圖。Stage：0 灰模（無動畫）→ 1 白模（有動畫）→ 2 原貼圖。
+- Level0 = 0；Level1 = 0，石碑（網格名含 "Monument"）→ 1：運行中小狐離出口（`NextLevel`）9 m 內時，把小狐 `Hops` 剩下的路線換成「NavMesh 走到石碑朝出口側 2.5 m 的站位點 → 直接走到路線終點」，到站位點觸發演出（算不出路時退回：離出口 5 m 內觸發；RESET 回起點會重新啟用）；Level2 = 1（`?Stage2` 為 2），走到 `StageGoal`（Checkpoint_Shrine）→ 2；其他地圖 = 2。
+- 灰模：真網格隱藏，`StatueMesh`（PoseableMesh）掛在網格上，開局 0.2 s 複製待機姿勢後定格（角色 Tick 每幀重播動畫，關 Tick 壓不住）。材質 `/Game/Dev/Materials/FoxLook/M_FoxClay`、`M_FoxWhite`。
+- 觸發時「資產修復」演出：小狐停下、轉向觸發物，追擊者 CustomTimeDilation 0；`WBP_Dialogue` 逐句顯示（系統行綠字、小狐白字），含 "Reloading" 的系統行帶進度條，期間新舊外觀閃爍，結束時定為新外觀並閃暖光；播完若原本在走且 Phase == 1 則繼續走。
+- 台詞：觸發物上的 `Say:<文字>` tag 覆蓋預設，`Say:SYS:<文字>` 為系統行；沒有 tag 時用藍圖內英文預設。
 
 ## 用 MCP 改東西時的經驗（踩過的坑）
 
