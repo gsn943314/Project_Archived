@@ -19,7 +19,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | `Lvl_BlockTutorial_V5_Art` | V5 套用 MegaJam 美術（`/Game/Dev/Meshes`），每階 175 cm（樓梯模型高度壓成 0.5） |
 | `Lvl_Level2` | Level 2（Forgotten Wilds / Hollow Shrine，`level2_build.py` 生成；改版面改那支檔再 `build()`）：2-1 右邊填洞＋旋轉橋＋3 階樓梯、左邊填洞＋野獸（箱子擋門）＋水車升降梯（3 階，開場在上面）→ Checkpoint → 2-2 填洞、旋轉橋、守衛在高台（它的升降梯留在上面它就會坐下來攻擊）、填洞、升降梯（3 階）上到 B。16×20 格、8 階 |
 | `Lvl_Level0_Davidtesting` | Level 0（複製自組員的 `/Game/Dev/Lvl_Level0_Storybook`，手擺美術）：兩座島（草地範圍全用 Wide 鋪成灰盒地板，中間 3 格斷崖）；佈告欄在原位原朝向（路中間、正面朝起點，`NoticeBoard_Blocker` 隱形碰撞讓角色繞過），開場狐狸走到它前面（TargetPoint `IntroSpot`）看對話，點完進灰盒；起點 → 繞過佈告欄 → 3 格斷崖坑（`FillSlot_c4/5/6`）→ 樓梯 → 傳送門。3 個方塊上掛直立的石頭（Placement1），填進坑後最終畫面換成躺平的石橋（Placement2）。`Editor_Grid` tag `MazeGreyOnly`（Maze 只在灰盒顯示，美術地台＝最終畫面）；這關走道只有一格寬，`RecastNavMesh` 半徑用 35（120 會把走道侵蝕光）。灰盒總覽鏡頭是「接近 isometric 的窄視角透視」（`OverviewCamera` FOV 30°、pitch -45°、yaw -45°、距離約 5600 cm；純正交鏡頭和跟拍鏡頭混合時會飛很遠、看起來也怪，已改回透視；`ZoomCamera` 仍支援正交鏡頭＝改 OrthoWidth），PLAY 跟拍仍是第三人稱 |
-| `Lvl_Camp_Whitebox_Davidtesting` | Camp 手擺美術關（Storybook 外皮，Level 0 的下一關）：灰盒總覽鏡頭和 Level 0 一樣用俯角 45° 的窄視角（FOV 60°、距離約 5600 cm；更窄要放更遠，Storybook 後製會讓遠處整片發白），終點傳送門 `SM_StoneArchway` 產生拱門形 `GB_` |
+| `Lvl_Level1` | Level 1（原 `Lvl_Camp_Whitebox_Davidtesting` 改名）Camp 手擺美術關（Storybook 外皮，Level 0 的下一關）：灰盒總覽鏡頭和 Level 0 一樣用俯角 45° 的窄視角（FOV 60°、距離約 5600 cm；更窄要放更遠，Storybook 後製會讓遠處整片發白），終點傳送門 `SM_StoneArchway` 產生拱門形 `GB_` |
 | `Lvl_BlockTutorial_V3/V4/V5` | 新版生成器：蜿蜒折線路徑、約 10 階高低差（seed 33/55/77） |
 | `Lvl_Terraces` | S 型往上爬的梯田關，含所有機關 |
 | `Lvl_PathfindingPuzzle` | 最早的平面原型，含所有機關 |
@@ -65,7 +65,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - **填坑換美術**（`SetViewMode`）：tag `FillSlot` 的 TargetPoint（放在坑的格子中心），attach 在它上面的美術只在「最終畫面且有方塊填進這個坑」時顯示，填坑方塊自己 attach 的美術則隱藏。
 - **後段晚點出現**（`Editor_Grid` tag `RevealAfterX:<x>`，`storybook_skin.tag_reveal()`，Rebuild / Sync Greybox 後自動補 tag）：中心在 x 之後的 Maze、美術、`GB_`、方塊與其美術加 tag `RevealAfterFill`；遊戲中在第一個方塊填進坑（`FillSlot`）之前全部隱藏、方塊點不到，填進去後 `CheckReveal`（`DropFiller` 之後呼叫）把它們顯示出來。Level 0 用 175：一開始只有第一格坑，另外兩格坑和整座後島都先不出現。
 - **斷崖只看得到引導**（`Editor_Grid` tag `GapX:<x0>:<x1>`，`storybook_skin.tag_gap()`，Rebuild 後自動補）：中心在這段 x 範圍內的坑底與坑邊整格的牆加 tag `NoShow`（缺口兩端的牆縮成半格 RIM 保留，島照樣被邊牆圍起來，只留路口）：遊戲與編輯器都不顯示、碰撞保留（方塊照樣落在坑底），兩座島看起來是分開的；每格坑放一個半透明的引導方塊（資料夾 `Guides`，`M_GuideGhost`，tag `VisGrey` + `FillGhost`，後兩格加 `RevealAfterFill`）。Level 0 用 -175:875。
-- **下一關**（`OnRunFinished`）：抵達終點時，若有 tag `NextLevel` 的 actor，讀它的 tag `Level:<地圖名>`，2 秒後 `OpenLevel` 切過去。Level 0 的 `PointB_Target` → `Lvl_Camp_Whitebox_Davidtesting`。
+- **下一關**（`OnRunFinished`）：抵達終點時，若有 tag `NextLevel` 的 actor，讀它的 tag `Level:<地圖名>`，2 秒後 `OpenLevel` 切過去。Level 0 的 `PointB_Target` → `Lvl_Level1`。
 - **Checkpoint**：tag `Checkpoint` 的 actor；角色經過（2D 260 cm 內）時把它存成新的起點，被抓或 RESET 後從這裡重來（`BP_PathfindingCharacter` Tick）。
 - 相鄰兩個節點高度不同 → 中間自動放樓梯（需要足夠的直線格，不夠會出現警告）。方塊/敵人在牆上 → 自動挖凹槽。
 - 格子原點存在 `Editor_Grid` actor。生成器也是先放標記再呼叫 `rebuild()`，所以 V3/V4/V5 與新生成的關卡都能直接編輯；`Lvl_BlockTutorial`、`V2` 沒有標記。
@@ -74,7 +74,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - `puzzle_art.py`（只在選單 **Puzzle → Apply Art**，工具列已移除，避免誤按）：樓梯 → `SM_PinkStone01`、走道地板 → `SM_StonePlatform01`、走道邊緣連續的邊合成一段，用接近原尺寸的模型貼著走道拼：3 格 `SM_StoneWall01`、2 格 `SM_StoneWallDecor`、1 格 `SM_StoneWallWindow`，轉角兩道牆互相穿插；樓梯兩側用斜的 `SM_StoneWallDamaged`（平地格＋樓梯格，scale 1，位置/朝向取自手動調好的 r5_c4，常數 `RAMP_*`；樓梯腳下是轉角時不用）；牆片一律 scale 1；`Editor_Grid` 有 tag `Art` 時樓梯旁不再壓低牆（不留凹槽）；遠離走道的灰牆頂 → 少量 `SM_StoneCliff01/02`；灰色牆方塊維持原樣、外圍 → `SM_StoneWall01` 系列（3 格一段）、B 點 → `SM_Portal` 面向路徑。美術放在 `Art` 資料夾、無碰撞；被蓋住的灰盒方塊只隱藏、保留碰撞。改完標記 / Rebuild 後要再按一次 Apply Art。
 - **島嶼邊緣**（`ISLAND`）：外圈只留半格（`RIM` 175 cm）貼著走道的牆，再往外的地形直接切掉；`Maze_Backdrop` 降到 `BACKDROP_Z`（-1800），整個關卡像浮在下面的島。所有用 Rebuild 的關卡都適用。
 - **灰盒 / 最終畫面切換**（`view_mode.py`，工具列 **Grey / Final**）：兩套都是 StaticMeshActor，只切顯示。tag `VisFinal`＝最終美術（資料夾名含 `Art`，手動放進去的也算）、`VisGrey`＝只在灰盒顯示（`Greybox` 資料夾的 `GB_` 代理方塊、被美術蓋住的 `Maze` 地板/樓梯方塊）。碰撞與 NavMesh 永遠只來自 `Maze`。切到 Grey 時依目前美術的 transform 與 `/Game/Project/Data/DT_GreyboxProfiles`（Box / Steps / Custom / None）重新產生 `GB_`；不要手改 `GB_`。`Editor_Grid` 有 tag `GreyMaze` 的手擺美術關卡（Camp）樓梯與地板不產生 `GB_`（灰盒＝`Maze` 樓梯，最終畫面隱藏被 `SM_PinkStone01` / `SM_StoneStairs` 蓋住的 `Maze_Stair`），牆、門等其他美術照常產生 `GB_`；拱門與傳送門（mesh 名含 `Arch` / `Portal`）預設產生兩柱＋橫樑的 `GB_`。Live Edit 偵測到美術移動 / 新增 / 刪除後會自動重產 `GB_`。可拖曳方塊上的美術（例如 `ArtCrate_`）要設 Movable 並 attach 到方塊上才會跟著移動。遊戲中 `BP_PathfindingPlayerController.SetViewMode`：`EnterPlanning` 灰盒、`StartRun` 最終畫面。
-- **Storybook 外皮**（`storybook_skin.py`，`Editor_Grid` 有 tag `StorybookSkin` 的關卡，目前是 `Lvl_Camp_Whitebox_Davidtesting`）：每個 `Maze_Path/Wall` 複製一份最終材質的分身（走道 `MI_PavingD`、牆 `MI_GrassTopSoilSides`；樓梯不做分身，一律用 `SM_PinkStone01` 樓梯模型，避免重疊，資料夾 `Camp_ArtSkin`，tag `VisFinal`+`NoGreybox`），原本的 Maze 方塊加 `VisGrey`+`Skinned`。每次 Rebuild 後自動重產。從 `/Game/Dev/Lvl_StorybookPreview` 複製來的包邊物件在 `Camp_ArtPreview/Storybook`（tag `NoGreybox`，不產生灰盒）。
+- **Storybook 外皮**（`storybook_skin.py`，`Editor_Grid` 有 tag `StorybookSkin` 的關卡，目前是 `Lvl_Level1`）：每個 `Maze_Path/Wall` 複製一份最終材質的分身（走道 `MI_PavingD`、牆 `MI_GrassTopSoilSides`；樓梯不做分身，一律用 `SM_PinkStone01` 樓梯模型，避免重疊，資料夾 `Camp_ArtSkin`，tag `VisFinal`+`NoGreybox`），原本的 Maze 方塊加 `VisGrey`+`Skinned`。每次 Rebuild 後自動重產。從 `/Game/Dev/Lvl_StorybookPreview` 複製來的包邊物件在 `Camp_ArtPreview/Storybook`（tag `NoGreybox`，不產生灰盒）。
 - **手動美術保護**：生成的美術有 `ArtAuto` + `Gen:<transform>`；Apply Art 只重建沒被動過的。被移動/旋轉/縮放的自動鎖住，被刪掉/替換的位置記在 `Art_Registry`（tag `Slot:`）不再補；**Puzzle → Reset Selected Art** 還原。
 - `live_edit.py`：`init_unreal.py` 啟動時註冊 Slate tick callback；有 `Editor_Grid` 的關卡中，標記停止移動 0.35 s 後磁吸、全部靜止 0.6 s 後 `rebuild(save=False, navmesh=False)`。PIE 時不動作。用 MCP 腳本移動標記時要注意 Live Edit 會跟著改位置。
 
@@ -98,6 +98,9 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 
 - `BP_PuzzleGameInstance`：MasterVolume / MusicVolume / SfxVolume / Language（0 英文、1 繁中、2 簡中，語言按鈕循環切換），`LoadSettings`、`SaveSettings`（slot `PuzzleSettings`）、`ApplyAudio`。
 - `BP_MenuPlayerController`：建立 `WBP_MainMenu`、綁定按鈕、`ShowPanel`、`UpdateTexts`（中英文字串都在這裡）。新增關卡要加按鈕 `BtnLvlN` 與事件 `OnLvlN`。
+- 主選單：Continue（有進度才顯示）/ New Game（→ Level 0）/ Level Select / Settings / Quit。關卡選擇只有 4 個：`BtnLvl0` Level 0（`Lvl_Level0_Davidtesting`）、`BtnLvl1` Level 1（`Lvl_Level1`）、`BtnLvl2` Level 2-1（`Lvl_Level2`）、`BtnLvl3` Level 2-2（`Lvl_Level2` + 開啟參數 `Stage2`）；`BtnLvl4–6` 隱藏。
+- 進度：`BP_PuzzleGameInstance.SaveProgress(Map, Options)` 存在設定存檔（`LastLevel` / `LastOptions`，slot `PuzzleSettings`）；`BP_PathfindingPlayerController` 每次進關卡時存一次，過了 Level 2 的 checkpoint（`OnStageCleared`）存成 `Stage2`。Continue = `OpenLevel(LastLevel, LastOptions)`。
+- `Stage2` 開啟參數：`BP_PathfindingPlayerController.SkipToStage2` 讓角色從 `StageGoal`（checkpoint）出發、目標換成 Point B、鏡頭用 `StageCam`。
 - `BP_PathfindingPlayerController` BeginPlay 會套用音量；`Esc` 回主選單。
 - 操作：編輯時左鍵拖方塊、在空白處拖曳＝平移畫面（`StartLeftPan`）；滾輪縮放；右鍵左右拖＝繞畫面中心左右旋轉（`bOrbiting`，用 `GetInputMouseDelta`，俯角固定；右鍵按住時游標被 capture，`GetMousePosition` 不會變）；中鍵/方向鍵平移。PLAY 中沒有視角旋轉。
 - 角色 `FollowCameraArm`：第三人稱（長 520、俯角 20°、有延遲平滑）。
