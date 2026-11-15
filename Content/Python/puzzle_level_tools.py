@@ -472,6 +472,7 @@ def rebuild(save=True, navmesh=True):
         SK.apply()
     SK.maze_grey_only()
     SK.tag_reveal()
+    SK.tag_gap()
 
     labels = {a.get_actor_label(): a for a in _actors() if a.get_actor_label() in
               ('PointA_PathfindingCharacter', 'PointB_Target', 'NavMeshBoundsVolume_Puzzle')}

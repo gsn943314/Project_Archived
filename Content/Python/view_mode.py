@@ -214,7 +214,9 @@ def set_view(final):
     _S['final'] = bool(final)
     for a in T._actors():
         tags = [str(t) for t in a.tags]
-        if 'VisFinal' in tags:
+        if 'NoShow' in tags:
+            a.set_is_temporarily_hidden_in_editor(True)
+        elif 'VisFinal' in tags:
             a.set_is_temporarily_hidden_in_editor(not final)
         elif 'VisGrey' in tags:
             a.set_is_temporarily_hidden_in_editor(final)

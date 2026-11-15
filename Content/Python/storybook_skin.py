@@ -123,3 +123,30 @@ def tag_reveal():
             a.tags = list(a.tags) + [unreal.Name('RevealAfterFill')]
             n += 1
     return n
+
+
+def tag_gap():
+    """Editor_Grid tag `GapX:<x0>:<x1>` (Lvl_Level0_Davidtesting): the Maze cubes whose centre is in that x range (pit
+    floors, the walls beside the pits, the island rims at the gap) are never shown (tag NoShow, hidden in the game and
+    in both editor views) but keep their collision, so the islands read as separate with an open gap; translucent
+    guide boxes (folder Guides) show where blocks go."""
+    g = [a for a in T._actors() if a.get_actor_label() == 'Editor_Grid']
+    rng = None
+    for t in (g[0].tags if g else []):
+        if str(t).startswith('GapX:'):
+            _, a0, a1 = str(t).split(':')
+            rng = (float(a0), float(a1))
+    if rng is None:
+        return 0
+    n = 0
+    for a in T._actors():
+        if T._folder(a) != 'Maze':
+            continue
+        o = a.get_actor_bounds(False)[0]
+        if not (rng[0] < o.x < rng[1]):
+            continue
+        if 'NoShow' not in [str(t) for t in a.tags]:
+            a.tags = list(a.tags) + [unreal.Name('NoShow')]
+        a.set_actor_hidden_in_game(True)
+        n += 1
+    return n
