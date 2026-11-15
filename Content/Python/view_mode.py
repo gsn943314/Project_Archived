@@ -70,7 +70,7 @@ def _proxy(label, xf, center, ext, mat):
     return a
 
 
-STAIR_ART = ('SM_PinkStone01',)
+STAIR_ART = ('SM_PinkStone01', 'SM_StoneStairs')
 # meshes with loose rubble scattered around the foot: the grey box only frames the main body
 BODY_ONLY = {'SM_StoneWallDamaged': 0.2, 'SM_StoneCliff01': 0.2, 'SM_StoneCliff02': 0.5}   # mesh: height fraction the body starts at
 _BODY = {}
@@ -142,7 +142,7 @@ def sync_greybox():
             continue
         if maze and (mesh.get_name() in STAIR_ART or 'Platform' in mesh.get_name()):
             continue
-        p = prof.get(mesh.get_name(), {'shape': 'Arch' if 'Arch' in mesh.get_name() else 'Box', 'pad': 0.0})
+        p = prof.get(mesh.get_name(), {'shape': 'Arch' if ('Arch' in mesh.get_name() or 'Portal' in mesh.get_name()) else 'Box', 'pad': 0.0})
         shape = p['shape'].lower()
         if shape == 'none':
             continue
