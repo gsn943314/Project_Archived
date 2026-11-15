@@ -96,3 +96,30 @@ def maze_grey_only():
             a.tags = list(a.tags) + [unreal.Name('VisGrey')]
             n += 1
     return n
+
+
+def tag_reveal():
+    """Editor_Grid tag `RevealAfterX:<x>` (Lvl_Level0_Davidtesting): everything of the level beyond x (Maze, art, grey
+    proxies, blocks and their art) gets the tag RevealAfterFill - hidden in the game until a block fills a hole
+    (BP_PathfindingPlayerController.CheckReveal / SetViewMode)."""
+    g = [a for a in T._actors() if a.get_actor_label() == 'Editor_Grid']
+    x0 = None
+    for t in (g[0].tags if g else []):
+        if str(t).startswith('RevealAfterX:'):
+            x0 = float(str(t).split(':')[1])
+    if x0 is None:
+        return 0
+    n = 0
+    for a in T._actors():
+        f = T._folder(a)
+        if not (f == 'Maze' or f == 'Greybox' or 'Art' in f.split('/')[0] or f in ('Blocks', 'Art_Blocks')):
+            continue
+        if not isinstance(a, unreal.StaticMeshActor) and f != 'Blocks':
+            continue
+        o, e = a.get_actor_bounds(False)
+        if o.x - e.x < x0 - 1:
+            continue
+        if 'RevealAfterFill' not in [str(t) for t in a.tags]:
+            a.tags = list(a.tags) + [unreal.Name('RevealAfterFill')]
+            n += 1
+    return n

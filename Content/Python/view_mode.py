@@ -203,6 +203,8 @@ def sync_greybox():
         center = unreal.Vector((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, (mn.z + mx.z) / 2)
         _proxy(lab, xf, center, mx - mn, mat)
         n += 1
+    import storybook_skin as SK
+    SK.tag_reveal()             # new GB_ proxies of a reveal-later area get its tag
     set_view(_S['final'])
     return n
 
