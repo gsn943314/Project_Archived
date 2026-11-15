@@ -146,6 +146,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 13. **走在路中間**：角色不再用 `AIMoveTo` 一段段走（每段結束會停一下），改在 `Tick` 用 `AddMovementInput` 沿 `Hops` 連續前進（轉角 70 cm 內換下一點、最後一點 40 cm），0.6 s 沒前進＝路斷了 → BLOCKED；`can_walk_off_ledges` 關閉，不會走進坑裡。`BP_PathfindingCharacter.StartRun` 把 NavMesh 路徑的每個轉角用 `SnapCell` 移到所在 350 cm 格子的正中央（只在平地：格子中心的 NavMesh 高度和原點不同＝在樓梯上，就只對齊橫越樓梯的那一軸，並在後面補上 NavMesh 原本的轉角＝樓梯腳，免得在樓梯半途轉彎走下樓梯側邊）（格子原點 = tag `EditorGrid` 的 `Editor_Grid`，`get_grid()` 會自動加 tag；沒有就不對齊）。
 12. **導航半徑 AgentRadius = 120**（`DefaultEngine.ini` 與各關卡的 `RecastNavMesh-Default`）：讓角色走在路中間、不貼著牆和模型邊緣。舊關卡的 RecastNavMesh 仍是 35，要改那個 actor 的 agent_radius 再 BUILDPATHS。
 15b. **PIE 中不要用 `execute_python` 改遊戲物件**（`call_method`、`teleport`、`set_editor_property` 等）：Python 執行會包成 Undo transaction，把 PIE 物件記進 TransBuffer，StopPIE 時 `PlayLevel.cpp:558` 斷言「Object from PIE level still referenced」→ Editor 閃退。PIE 中只做唯讀查詢；DSL Write 只編譯不存檔，改完藍圖要馬上 `save_asset`，否則閃退就沒了。
+15c. **骨架網格的材質要勾 `Used with Skeletal Mesh`**：沒勾時 Editor 只會在記憶體裡自動補勾（不存檔），所以自己電腦有時正常，隊友拉下來或打包後就變回預設灰格材質（「材質跑掉」）。`M_RockEnemy`（Level 1/2 的石頭野獸）就是這樣，已勾選並存檔。新匯入角色時記得檢查。
 11. **角色不走 / 路徑是 0 個點**：通常是關卡裡的 `RecastNavMesh-Default` 壞掉（log 出現 `Unable to find RecastNavMesh instance`）。修法：刪掉該 actor → 稍微移動 `NavMeshBoundsVolume` → 執行 `BUILDPATHS`（有時要做兩次）→ 存檔。改動地形或 NavMesh 範圍後都要重建。
 
 ## HUD（Creator Access 卡片，`WBP_PathfindingHUD`）
