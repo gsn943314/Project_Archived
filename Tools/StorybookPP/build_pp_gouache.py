@@ -76,6 +76,7 @@ PASSES = {
             ("Diffuse", ST.PPI_DIFFUSE_COLOR, "Color"),
             ("Normal", ST.PPI_WORLD_NORMAL, "Color"),
             ("CustomDepth", ST.PPI_CUSTOM_DEPTH, "Color"),   # backdrop mask (Maze_Backdrop has Render CustomDepth)
+            ("Stencil", ST.PPI_CUSTOM_STENCIL, "Color"),     # stencil > 0 = not backdrop (comic glitch objects)
         ],
         "world_position": True,
         "scalars": [

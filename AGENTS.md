@@ -77,6 +77,12 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
   2. **`MF_OcclusionCutout` 被母材質引用後不要刪掉節點重建**：輸出會換 id，母材質的連線全部斷掉、所有用它的材質編譯失敗。`build_mf()` 對已存在的函式只更新 HLSL。
   3. Python 裡 `UKismetMaterialLibrary` 叫 `unreal.MaterialLibrary`（Kismet 前綴會被去掉）。
 
+## 漫畫 Glitch（`/Game/Dev/Materials/Glitch/`，重建：`Tools/Glitch/build_glitch.py` 的 `build()`）
+- 全屏撕裂 `M_PP_ComicGlitch`：短脈衝用，強度 = max(MI `GlitchAmount`, `MPC_Glitch.Amount`)。
+- 物件撕裂（A）`M_PP_ComicGlitchObject`：只作用在 Render CustomDepth + stencil 128–255 的網格（強度 = (stencil−128)/127，只在它是可見表面時）。需要 `r.CustomDepth=3`（DefaultEngine.ini）；Gouache B 的背景遮罩已改成 stencil > 0 不算背景（`Maze_Backdrop` 保持 stencil 0）。
+- 整只重新載入閃爍（B）`MF_ComicGlitch`（在 `M_Master_ComicGlitch`）：舊外觀 = `ReloadFromColor` × 底色亮度；`OldLook` = Custom Primitive Data 1（逐物件）；`Reload` = min(MI, `MPC_Glitch.Reload`) 做整場景載入。
+- `BPC_AssetReload`（`/Game/Dev/Blueprints`）掛到 actor 上、呼叫 `PlayReload`：A、B 交替（先撕裂再換外觀，越往後撕裂越短越少），首次使用時生成一個帶物件撕裂 blendable 的 unbound PPV。`L_Assets` 的 `SM_GlitchPreview_Animated` 掛著自動循環的預覽。
+
 ## 用 MCP 改東西時的經驗（踩過的坑）
 
 1. **不要在 `execute_python` 裡切換關卡**（`load_level`）— 會讓 Editor 閃退。改用 `EditorToolset.LevelToolset.LoadLevel` 工具，且單獨一次呼叫。
