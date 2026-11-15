@@ -41,6 +41,7 @@ PASSES = {
             ("HighEdge", 1.2, "1 Ramp"),
             ("RampSoftness", 0.1, "1 Ramp"),       # wide enough that Lumen noise doesn't flip tones
             ("HighlightAmount", 0.35, "1 Ramp"),
+            ("LightColorKeep", 0.8, "1 Ramp"),      # hue of strongly coloured local lights
             ("Saturation", 0.78, "3 Grade"),
             ("AccentPreserve", 0.3, "3 Grade"),
             ("HazeStart", 5000.0, "4 Haze"),
