@@ -19,6 +19,11 @@ struct FSBG
 FSBG G;
 
 float3 scene = Scene.rgb;
+#if SHADING_PATH_MOBILE && !MOBILE_DEFERRED_SHADING
+// Web (Wasm) mobile forward tier: no GBuffer (DiffuseColor) and no usable depth for this pass,
+// so the gouache passes show the plain scene there. Desktop and the mobile deferred tier run as usual.
+return scene;
+#endif
 float  z     = Depth.r;
 float3 alb   = Diffuse.rgb;
 

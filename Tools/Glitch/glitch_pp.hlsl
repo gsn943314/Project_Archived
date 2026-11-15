@@ -3,6 +3,14 @@
 // spike-and-decay every PreviewPeriod seconds. Bands: random slant per step, some bands split into
 // thin slivers, rare "jump" bands, halftone only on a few bands, aspect-correct dots.
 // Inputs: Scene UV ViewSize T Amount Loop Period Width Split Shift Steps InkCyan InkMagenta InkYellow
+// Scene texture reads that compile on both shading paths (the web build's WebGPU tiers are mobile).
+#ifndef GPP_STL
+#if SHADING_PATH_MOBILE
+#define GPP_STL(uv, idx) MobileSceneTextureLookup(Parameters, idx, uv)
+#else
+#define GPP_STL(uv, idx) SceneTextureLookup(uv, idx, false)
+#endif
+#endif
 float A = saturate(Amount);
 if (Loop > 0.5)
 {
@@ -28,7 +36,7 @@ float2 split = float2(Split, Split * -0.25) * A * active;
 float2 redUV = ClampSceneTextureUV(ViewportUVToSceneTextureUV(saturate(moved + split), 14), 14);
 float2 greenUV = ClampSceneTextureUV(ViewportUVToSceneTextureUV(moved, 14), 14);
 float2 blueUV = ClampSceneTextureUV(ViewportUVToSceneTextureUV(saturate(moved - split), 14), 14);
-float3 color = float3(SceneTextureLookup(redUV, 14, false).r, SceneTextureLookup(greenUV, 14, false).g, SceneTextureLookup(blueUV, 14, false).b);
+float3 color = float3(GPP_STL(redUV, 14).r, GPP_STL(greenUV, 14).g, GPP_STL(blueUV, 14).b);
 float phase = thin > 0.5 ? frac(diagonal * 4.0) : frac(diagonal);
 float edge = 1.0 - smoothstep(0.05, 0.15, phase);
 float deep = 1.0 - smoothstep(0.015, 0.048, phase);

@@ -41,6 +41,17 @@ struct FSBK
 };
 FSBK G;
 
+// Scene texture reads that compile on both shading paths: the mobile path (the web/Wasm build's
+// WebGPU tiers) has no SceneTextureLookup(UV, Index, bFiltered), only MobileSceneTextureLookup.
+// Desktop keeps the exact same call as before.
+#ifndef SBK_STL
+#if SHADING_PATH_MOBILE
+#define SBK_STL(uv, idx, filt) MobileSceneTextureLookup(Parameters, idx, uv)
+#else
+#define SBK_STL(uv, idx, filt) SceneTextureLookup(uv, idx, filt)
+#endif
+#endif
+
 float  K   = max(PaintRange, 0.01);
 float2 uvC = GetDefaultSceneTextureUV(Parameters, 14);
 float2 uvD = GetDefaultSceneTextureUV(Parameters, 1);
@@ -48,13 +59,16 @@ float2 pxC = SceneInvSize.xy;
 float2 pxD = DepthInvSize.xy;
 float  z   = Depth.r;
 float3 src = Scene.rgb;
+#if SHADING_PATH_MOBILE && !MOBILE_DEFERRED_SHADING
+return src;   // web mobile forward tier: plain scene (see PP_Gouache_A.hlsl)
+#endif
 float  sky = step(200000.0, z);
 
 // Before tonemapping, raw SceneTextureLookup(PostProcessInput0) is pre-exposed while the
 // Scene pin is not; scale lookups by OneOverPreExposure so neighbours match the pin.
 float preExp = View.OneOverPreExposure;
 if (DebugMode > 3.5) return src;                                                 // 4: Scene pin
-if (DebugMode > 2.5) return SceneTextureLookup(uvC, 14, false).rgb * preExp;     // 3: PPI0 lookup (should match 4)
+if (DebugMode > 2.5) return SBK_STL(uvC, 14, false).rgb * preExp;     // 3: PPI0 lookup (should match 4)
 
 // ---------------------------------------------------------------- 0. background mask
 // Custom depth holds the backdrop even where it is covered, so a pixel is backdrop
@@ -103,7 +117,7 @@ if (rad > 0.5 && KuwaharaAmount > 0.001 && DebugMode < 1.5)
             float  r2 = dot(v, v);
             if (r2 > 1.0) continue;
             float2 suv = ClampSceneTextureUV(uvC + float2(x, y) * (rad / N) * pxC, 14);
-            float3 c   = G.ToPaint(SceneTextureLookup(suv, 14, true).rgb * preExp, K);
+            float3 c   = G.ToPaint(SBK_STL(suv, 14, true).rgb * preExp, K);
 
             float w[8];
             float vxx = zeta - eta * v.x * v.x;
@@ -178,9 +192,9 @@ float sil = 0.0, crease = 0.0, matb = 0.0;
 {
     float ang  = t2 * 0.78539816 + nB * 0.8;
     float2 suv = ClampSceneTextureUV(uvD + float2(cos(ang), sin(ang)) * pxD * w, 1);
-    float  zn  = SceneTextureLookup(suv, 1, false).r;
-    float3 nn  = SceneTextureLookup(suv, 8, false).rgb;
-    float3 an  = SceneTextureLookup(suv, 2, false).rgb;
+    float  zn  = SBK_STL(suv, 1, false).r;
+    float3 nn  = SBK_STL(suv, 8, false).rgb;
+    float3 an  = SBK_STL(suv, 2, false).rgb;
     float  dz  = (zn - z) / max(z, 50.0);
     float same = 1.0 - smoothstep(0.01, 0.03, abs(dz));
     sil    = max(sil, smoothstep(0.015, 0.05, dz * DepthSensitivity));     // drawn on the near object

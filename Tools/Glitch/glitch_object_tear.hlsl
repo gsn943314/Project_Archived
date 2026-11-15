@@ -5,6 +5,14 @@
 // (RGB split + ink edge); where the slice moved away, the hole is filled with dark ink + halftone.
 // Inputs: Scene StencilProbe DepthProbe CustomDepthProbe (bind the scene textures) UV ViewSize T
 //         Amount Width Split Shift Steps InkCyan InkMagenta InkYellow
+// Scene texture reads that compile on both shading paths (the web build's WebGPU tiers are mobile).
+#ifndef GOT_STL
+#if SHADING_PATH_MOBILE
+#define GOT_STL(uv, idx) MobileSceneTextureLookup(Parameters, idx, uv)
+#else
+#define GOT_STL(uv, idx) SceneTextureLookup(uv, idx, false)
+#endif
+#endif
 float frame = floor(T * max(Steps, 1.0));
 float fh = frac(sin(frame * 3.17) * 43758.5453);
 float slant = 0.38 + (fh - 0.5) * 0.30;
@@ -22,12 +30,12 @@ float2 shiftV = float2(Shift, -Shift * 0.26) * sgn * (0.5 + frac(hash * 3.7) * 0
 float2 srcUV = saturate(UV - shiftV);
 float2 sUV0 = ClampSceneTextureUV(ViewportUVToSceneTextureUV(UV, 25), 25);
 float2 sUV1 = ClampSceneTextureUV(ViewportUVToSceneTextureUV(srcUV, 25), 25);
-float st0 = SceneTextureLookup(sUV0, 25, false).r;
-float st1 = SceneTextureLookup(sUV1, 25, false).r;
-float cd0 = SceneTextureLookup(ClampSceneTextureUV(ViewportUVToSceneTextureUV(UV, 13), 13), 13, false).r;
-float cd1 = SceneTextureLookup(ClampSceneTextureUV(ViewportUVToSceneTextureUV(srcUV, 13), 13), 13, false).r;
-float sd0 = SceneTextureLookup(ClampSceneTextureUV(ViewportUVToSceneTextureUV(UV, 1), 1), 1, false).r;
-float sd1 = SceneTextureLookup(ClampSceneTextureUV(ViewportUVToSceneTextureUV(srcUV, 1), 1), 1, false).r;
+float st0 = GOT_STL(sUV0, 25).r;
+float st1 = GOT_STL(sUV1, 25).r;
+float cd0 = GOT_STL(ClampSceneTextureUV(ViewportUVToSceneTextureUV(UV, 13), 13), 13).r;
+float cd1 = GOT_STL(ClampSceneTextureUV(ViewportUVToSceneTextureUV(srcUV, 13), 13), 13).r;
+float sd0 = GOT_STL(ClampSceneTextureUV(ViewportUVToSceneTextureUV(UV, 1), 1), 1).r;
+float sd1 = GOT_STL(ClampSceneTextureUV(ViewportUVToSceneTextureUV(srcUV, 1), 1), 1).r;
 float aHere = (st0 > 127.5 ? (st0 - 128.0) / 127.0 : 0.0) * step(cd0, sd0 * 1.003 + 2.0);
 float aSrc  = (st1 > 127.5 ? (st1 - 128.0) / 127.0 : 0.0) * step(cd1, sd1 * 1.003 + 2.0);
 float g = saturate(Amount);
@@ -45,7 +53,7 @@ if (activeSrc > 0.5)
     float2 rUV = ClampSceneTextureUV(ViewportUVToSceneTextureUV(saturate(srcUV + split), 14), 14);
     float2 gUV = ClampSceneTextureUV(ViewportUVToSceneTextureUV(srcUV, 14), 14);
     float2 bUV = ClampSceneTextureUV(ViewportUVToSceneTextureUV(saturate(srcUV - split), 14), 14);
-    float3 c = float3(SceneTextureLookup(rUV, 14, false).r, SceneTextureLookup(gUV, 14, false).g, SceneTextureLookup(bUV, 14, false).b);
+    float3 c = float3(GOT_STL(rUV, 14).r, GOT_STL(gUV, 14).g, GOT_STL(bUV, 14).b);
     return lerp(c, ink, edge * aSrc * 0.9);
 }
 if (activeHere > 0.5)
