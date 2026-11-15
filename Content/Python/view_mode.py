@@ -72,7 +72,8 @@ def _proxy(label, xf, center, ext, mat):
 
 STAIR_ART = ('SM_PinkStone01', 'SM_StoneStairs')
 # meshes with loose rubble scattered around the foot: the grey box only frames the main body
-BODY_ONLY = {'SM_StoneWallDamaged': 0.2, 'SM_StoneCliff01': 0.2, 'SM_StoneCliff02': 0.5}   # mesh: height fraction the body starts at
+BODY_ONLY = {'SM_StoneWallDamaged': 0.2, 'SM_StoneCliff01': 0.2, 'SM_StoneCliff02': 0.5,
+             'SM_StoneMonument': 0.35, 'SM_PinkMossStone01': 0.2, 'SM_StoneCliff05': 0.3}   # mesh: height fraction the body starts at
 _BODY = {}
 
 
@@ -87,6 +88,27 @@ def _body_box(mesh, above=0.2):
         _BODY[k] = unreal.Box(unreal.Vector(min(p.x for p in top), min(p.y for p in top), b.min.z),
                               unreal.Vector(max(p.x for p in top), max(p.y for p in top), b.max.z))
     return _BODY[k]
+
+
+def _pillar_feet(mesh, along_x, lo, hi, z0, z1):
+    """Arch pillars from the mesh vertices between heights z0..z1: for the low and the high half of the span,
+    ((along_min, along_max), (depth_min, depth_max)) in mesh space, or None when that half has no vertices."""
+    try:
+        v = unreal.ProceduralMeshLibrary.get_section_from_static_mesh(mesh, 0, 0)[0]
+    except Exception:
+        return [None, None]
+    mid = (lo + hi) / 2
+    out = []
+    for side in (0, 1):
+        pts = [p for p in v if z0 <= p.z <= z1 and ((p.x if along_x else p.y) < mid) == (side == 0)]
+        if len(pts) < 8:
+            out.append(None)
+            continue
+        al = sorted(p.x if along_x else p.y for p in pts)
+        de = sorted(p.y if along_x else p.x for p in pts)
+        q = lambda s, f: s[min(len(s) - 1, max(0, int(len(s) * f)))]   # 3%..97%: ignore stray chips
+        out.append(((q(al, .03), q(al, .97)), (q(de, .03), q(de, .97))))
+    return out
 
 
 def _grey_is_maze():
@@ -191,13 +213,27 @@ def sync_greybox():
             dc = (mn.y + mx.y) / 2 if along_x else (mn.x + mx.x) / 2
             pw, h = span * 0.24, mx.z - mn.z
             lt = h * 0.25
-            parts = [(lo + pw / 2, pw, mn.z + (h - lt) / 2, h - lt), (hi - pw / 2, pw, mn.z + (h - lt) / 2, h - lt),
-                     ((lo + hi) / 2, span, mx.z - lt / 2, lt)]
-            for i, (c0, w, cz, hz) in enumerate(parts):
+            parts = [(lo + pw / 2, pw, mn.z + (h - lt) / 2, h - lt, dc, dep),
+                     (hi - pw / 2, pw, mn.z + (h - lt) / 2, h - lt, dc, dep),
+                     ((lo + hi) / 2, span, mx.z - lt / 2, lt, dc, dep)]
+            # each pillar framed by the mesh's own vertices in its half (ruined arches: one pillar can be much
+            # shallower than the whole arch; a full-depth box stuck out into the walkway)
+            fp = _pillar_feet(mesh, along_x, lo, hi, mn.z + h * 0.1, mx.z - lt)
+            for k, f in enumerate(fp):
+                if f:
+                    # only ever shrink the classic pillar box (fitted boxes of big arches came out wider and blocked
+                    # the walkway): intersect it with the vertex fit
+                    (a0, a1), (d0, d1) = f
+                    c0, w = parts[k][0], parts[k][1]
+                    a0, a1 = max(a0, c0 - w / 2), min(a1, c0 + w / 2)
+                    d0, d1 = max(d0, dc - dep / 2), min(d1, dc + dep / 2)
+                    if a1 - a0 > 20 and d1 - d0 > 20:
+                        parts[k] = ((a0 + a1) / 2, a1 - a0, parts[k][2], parts[k][3], (d0 + d1) / 2, d1 - d0)
+            for i, (c0, w, cz, hz, dci, dpi) in enumerate(parts):
                 if along_x:
-                    _proxy(f'{lab}_{i}', xf, unreal.Vector(c0, dc, cz), unreal.Vector(w, dep, hz), mat)
+                    _proxy(f'{lab}_{i}', xf, unreal.Vector(c0, dci, cz), unreal.Vector(w, dpi, hz), mat)
                 else:
-                    _proxy(f'{lab}_{i}', xf, unreal.Vector(dc, c0, cz), unreal.Vector(dep, w, hz), mat)
+                    _proxy(f'{lab}_{i}', xf, unreal.Vector(dci, c0, cz), unreal.Vector(dpi, w, hz), mat)
                 n += 1
             continue
         center = unreal.Vector((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, (mn.z + mx.z) / 2)
