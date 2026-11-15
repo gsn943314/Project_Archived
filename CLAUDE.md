@@ -68,7 +68,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - **後段晚點出現**（`Editor_Grid` tag `RevealAfterX:<x>`，`storybook_skin.tag_reveal()`，Rebuild / Sync Greybox 後自動補 tag）：中心在 x 之後的 Maze、美術、`GB_`、方塊與其美術加 tag `RevealAfterFill`；遊戲中在第一個方塊填進坑（`FillSlot`）之前全部隱藏、方塊點不到，填進去後 `CheckReveal`（`DropFiller` 之後呼叫）把它們顯示出來。Level 0 用 175：一開始只有第一格坑，另外兩格坑和整座後島都先不出現。
 - **斷崖只看得到引導**（`Editor_Grid` tag `GapX:<x0>:<x1>`，`storybook_skin.tag_gap()`，Rebuild 後自動補）：中心在這段 x 範圍內的坑底與坑邊整格的牆加 tag `NoShow`（缺口兩端的牆縮成半格 RIM 保留，島照樣被邊牆圍起來，只留路口）：遊戲與編輯器都不顯示、碰撞保留（方塊照樣落在坑底），兩座島看起來是分開的；每格坑放一個半透明的引導方塊（資料夾 `Guides`，`M_GuideGhost`，tag `VisGrey` + `FillGhost`，後兩格加 `RevealAfterFill`）。Level 0 用 -175:875。
 - **下一關**（`OnRunFinished`）：抵達終點時，若有 tag `NextLevel` 的 actor，讀它的 tag `Level:<地圖名>`，2 秒後 `OpenLevel` 切過去。Level 0 的 `PointB_Target` → `Lvl_Level1`，Level 1 的 → `Lvl_Level2`。
-- **擋路提示**（tag `BlockedStop` 的 TargetPoint，Level 0 的 `CliffStop` 在山前）：走不到終點時，只要還有 `Editable` 方塊在它 750 cm 內（方塊沒被移走），角色停在這個點（`BP_PathfindingCharacter.StartRun`），BLOCKED 後回起點，畫面下方用 `WBP_Dialogue` 顯示它的 `Say:` tag（`ShowHint`），直到第一個坑被填（`CheckReveal`）或按 PLAY 才收起（`HideHint`）。
+- **擋路提示**（tag `BlockedStop` 的 TargetPoint，Level 0 的 `CliffStop` 在 (-1050, 350)，格子中心，避免停下時掉頭讓跟拍鏡頭轉過來，也離山夠遠不觸發挖空）：走不到終點時，只要還有 `Editable` 方塊在它 1000 cm 內（方塊沒被移走），角色停在這個點（`BP_PathfindingCharacter.StartRun`），BLOCKED 後回起點，再用 `WBP_Dialogue` 一句一句顯示它的 `Say:` tag（`ShowHint` / `StartHintDialog` / `UpdateHint`，每句 2.8 s，最後一句後關閉），接著在那個方塊上畫上下浮動的黃色箭頭＋框，直到方塊被移走、第一個坑被填或按 PLAY（`HideHint`）。
 - **Checkpoint**：tag `Checkpoint` 的 actor；角色經過（2D 260 cm 內）時把它存成新的起點，被抓或 RESET 後從這裡重來（`BP_PathfindingCharacter` Tick）。
 - 相鄰兩個節點高度不同 → 中間自動放樓梯（需要足夠的直線格，不夠會出現警告）。方塊/敵人在牆上 → 自動挖凹槽。
 - 格子原點存在 `Editor_Grid` actor。生成器也是先放標記再呼叫 `rebuild()`，所以 V3/V4/V5 與新生成的關卡都能直接編輯；`Lvl_BlockTutorial`、`V2` 沒有標記。
