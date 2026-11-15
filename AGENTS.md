@@ -63,6 +63,20 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - **手動美術保護**：生成的美術有 `ArtAuto` + `Gen:<transform>`；Apply Art 只重建沒被動過的。被移動/旋轉/縮放的自動鎖住，被刪掉/替換的位置記在 `Art_Registry`（tag `Slot:`）不再補；**Puzzle → Reset Selected Art** 還原。
 - `live_edit.py`：`init_unreal.py` 啟動時註冊 Slate tick callback；有 `Editor_Grid` 的關卡中，標記停止移動 0.35 s 後磁吸、全部靜止 0.6 s 後 `rebuild(save=False, navmesh=False)`。PIE 時不動作。用 MCP 腳本移動標記時要注意 Live Edit 會跟著改位置。
 
+## 牆體遮擋挖空（Occlusion Cutout）
+
+鏡頭和目標之間的美術牆 / 懸崖會挖出一個不規則的洞（撕紙邊＋暖色描邊），看得到牆後面的小狐或方塊。地板、樓梯、道具不會被挖。
+
+- **資源**：`/Game/Dev/Materials/MPC_Occlusion`（`Enable`、`Target`、`Radius` 170、`NearMargin` 60、`FootOffset` -40、`EdgeNoise`、`RimWidth`、`RimColor`；預設 `Enable = 0`），`/Game/Dev/Materials/Functions/MF_OcclusionCutout`（HLSL 原始碼 `Tools/StorybookPP/Occlusion_Cutout.hlsl`，建置腳本 `Tools/StorybookPP/build_occlusion.py`）。挖空範圍是從鏡頭出發的圓錐，螢幕上大小不隨縮放改變；只挖「比目標更靠近鏡頭、且高於目標腳底」的像素。
+- **材質**：`M_Master` 是 **Masked**；Base Color 與 Opacity Mask 前面各有 static switch `OcclusionCutout`（關閉＝遮罩恆為 1，不挖）。目前打開開關的 MI：`MI_StoneWall01/Decor/Window/Damaged`、`MI_StoneCliff01–11`、`MI_StoneArchway`、`MI_StoneArchRuined`、`MI_StoneMonument`、`MI_Portal`。**要讓新的美術也能被挖：在它的 MI 勾 `OcclusionCutout`**（並加進 `build_occlusion.py` 的 `WALL_MIS`）。
+- **灰盒**：`M_PrototypeGrid` 也接了同樣的開關（`MI_MazeWall` 已勾），但母材質仍是 Opaque，所以灰盒牆目前不會被挖；要啟用就把 `M_PrototypeGrid` 改成 Masked。
+- **驅動**：`BP_PathfindingPlayerController.UpdateOcclusion`（`ReceiveTick` 最後呼叫）每幀寫 MPC：Phase 1/2 目標＝小狐；Phase 0 拖曳中目標＝被拖的方塊（+90 cm）；其他時候 `Enable = 0`。
+- **還沒做**：編輯階段滑鼠「穿過」被挖開的牆點到後面的方塊（拾取仍會被 `Maze` 牆的碰撞擋住）。
+- 坑：
+  1. **MI 的 Base Property Overrides 改成 Masked 不會生效**（能編譯但不裁切），母材質本身必須是 Masked。
+  2. **`MF_OcclusionCutout` 被母材質引用後不要刪掉節點重建**：輸出會換 id，母材質的連線全部斷掉、所有用它的材質編譯失敗。`build_mf()` 對已存在的函式只更新 HLSL。
+  3. Python 裡 `UKismetMaterialLibrary` 叫 `unreal.MaterialLibrary`（Kismet 前綴會被去掉）。
+
 ## 用 MCP 改東西時的經驗（踩過的坑）
 
 1. **不要在 `execute_python` 裡切換關卡**（`load_level`）— 會讓 Editor 閃退。改用 `EditorToolset.LevelToolset.LoadLevel` 工具，且單獨一次呼叫。
