@@ -32,7 +32,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | `BP_EditableObstacle` | 可拖曳方塊（紫色） |
 | `BP_EnemyBlock` | 敵人方塊（紅色），PLAY 時若在路上會變成 `BP_EnemyChaser`；`AggroRadius` 0 = 永遠追 |
 | `BP_EnemyChaser` | 追擊者（速度 620），碰到主角 → `OnCaught` |
-| `BP_Mechanism` | Level 2 機關（tag `Mechanism`，編輯時點一下觸發、不能拖）：`Kind` 0 = 升降梯（停在上緣或下緣，`bUp` = 開場在上面；點一下換到另一端；PLAY 中角色或敵人停在上面就被送到另一端；`RideScore` 判斷搭它能不能到目標，角色和追擊者走不到目標時會自動去搭），1 = 旋轉橋（每點一次轉 90°；河要 2 格寬，沒轉就過不去） |
+| `BP_Mechanism` | Level 2 機關（tag `Mechanism`，編輯時點一下觸發、不能拖）：`Kind` 0 = 升降梯（停在上緣或下緣，`bUp` = 開場在上面；點一下換到另一端；PLAY 中角色或敵人停在上面就被送到另一端；`RideScore` 判斷搭它能不能到目標，角色和追擊者走不到目標時會自動去搭），1 = 旋轉橋（每點一次轉 90°；河要 2 格寬，沒轉就過不去），2 = 單向旋轉門（鉸鍊在 actor 位置、門板沿 local +X；`Mesh` 相對位置設 (0,-50,0)；三下一輪：關、轉 90° 仍關、再轉 90° 開，再轉 180° 回到關；例：Davidtesting 的 `Gate_Pocket` + 美術 `SM_WoodFence` attach 在上面，口袋其餘開口用隱形牆 `GateWall_Pocket` 封住） |
 | `BP_Gimmick` | 機關，`Kind`: 0 火 / 1 霧 / 2 水 / 3 聲音誘餌 / 4 壓力板 / 5 門 / 6 橋；壓力板與門/橋用相同 `LinkId` 連動 |
 
 Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED。
