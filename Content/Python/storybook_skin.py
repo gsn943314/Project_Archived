@@ -117,7 +117,7 @@ def tag_reveal():
         if not isinstance(a, unreal.StaticMeshActor) and f != 'Blocks':
             continue
         o, e = a.get_actor_bounds(False)
-        if o.x - e.x < x0 - 1:
+        if o.x < x0:            # by centre: walls / pits of a cell belong to the side their centre is on
             continue
         if 'RevealAfterFill' not in [str(t) for t in a.tags]:
             a.tags = list(a.tags) + [unreal.Name('RevealAfterFill')]
