@@ -112,7 +112,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - **限制**：畫在後處理之後，所以沒有 bloom 光暈、邊緣沒有抗鋸齒。
 
 ## 小狐外觀進度（專案副本 `/Game/Project/Programming/Blueprints/Pathfinding/BP_FoxLook`，複製自組員的 `/Game/Dev/Blueprints/BP_FoxLook`）
-- **本專案的改法**：Level 0 開場（有 `IntroSpot`）時是原本的彩色小狐，開場動畫結束、進灰盒時才變成 0（`bWaitIntro`：看到控制器 `bInIntro` 變回 false）；之後是 0（灰模走路時有程序性晃動：上下彈跳＋搖擺，幅度依速度），走到塔（`SM_StoneMonument`，yaw 0，正面朝路）前的 TargetPoint `MonumentStand`（tag `LookStand`）時面向塔、觸發演出 → 1；Level 1 開場 1，走到出口旁的石碑（`SM_MossStone2`，網格名含 Monument）觸發演出 → 2（原貼圖）；Level 2 開場就是 2，checkpoint 不再觸發。離站位點或出口 9 m 內插入繞路。`BP_PathfindingGameMode` spawn 的是這份副本。以下是組員原版的說明：
+- **本專案的改法**：Level 0 開場（有 `IntroSpot`）時是原本的彩色小狐，開場動畫結束、進灰盒時才變成 0（`bWaitIntro`：看到控制器 `bInIntro` 變回 false）；之後是 0（灰模走路時有程序性晃動：上下彈跳＋搖擺，幅度依速度），走到塔（`SM_StoneMonument`，yaw 0，正面朝路）前的 TargetPoint `MonumentStand`（tag `LookStand`）時面向塔、觸發演出 → 1；Level 1 開場 1，走到出口旁的石碑（`SM_MossStone2`，網格名含 Monument）觸發演出 → 2（原貼圖）；Level 2 開場就是 2，checkpoint 不再觸發。離站位點或出口 9 m 內插入繞路，但只限「這一趟真的走到出口」（角色 `RunDestination` 就是出口、且和出口同高）：BLOCKED 時走向 RouteStep 不受影響（Level 1 上層走道就在出口上方 3.5 m，曾因此被拉去終點）。`BP_PathfindingGameMode` spawn 的是這份副本。以下是組員原版的說明：
 - 由 `BP_PathfindingGameMode` BeginPlay 生成，不改小狐 / 控制器藍圖。Stage：0 灰模（無動畫）→ 1 白模（有動畫）→ 2 原貼圖。
 - Level0 = 0；Level1 = 0，石碑（網格名含 "Monument"）→ 1：運行中小狐離出口（`NextLevel`）9 m 內時，把小狐 `Hops` 剩下的路線換成「NavMesh 走到石碑朝出口側 2.5 m 的站位點 → 直接走到路線終點」，到站位點觸發演出（算不出路時退回：離出口 5 m 內觸發；RESET 回起點會重新啟用）；Level2 = 1（`?Stage2` 為 2），走到 `StageGoal`（Checkpoint_Shrine）→ 2；其他地圖 = 2。
 - 灰模：真網格隱藏，`StatueMesh`（PoseableMesh）掛在網格上，開局 0.2 s 複製待機姿勢後定格（角色 Tick 每幀重播動畫，關 Tick 壓不住）。材質 `/Game/Dev/Materials/FoxLook/M_FoxClay`、`M_FoxWhite`。
