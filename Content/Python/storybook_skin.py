@@ -1,7 +1,7 @@
 """Storybook "skin" of the Maze terrain (look of /Game/Dev/Lvl_StorybookPreview) for levels whose Editor_Grid has
 the tag `StorybookSkin` (e.g. Lvl_Camp_Whitebox_Davidtesting).
 
-Every Maze_Path / Maze_Stair / Maze_Wall cube gets a twin with the final material (walkway paving, grass-top soil
+Every Maze_Path / Maze_Wall cube (stairs: the stair art) gets a twin with the final material (walkway paving, grass-top soil
 walls) in the folder `Camp_ArtSkin` (tags VisFinal + NoGreybox, no collision). The Maze cube itself is tagged
 VisGrey + Skinned, so the grey box still shows the grey terrain and the final render the storybook terrain;
 collision / NavMesh keep coming from the Maze cubes. Re-run automatically after every Rebuild (puzzle_level_tools).
@@ -11,7 +11,6 @@ import puzzle_level_tools as T
 
 FOLDER = 'Camp_ArtSkin'
 MAT = {'Maze_Path': '/Game/Dev/Materials/MI_PavingD',
-       'Maze_Stair': '/Game/Dev/Materials/MI_PavingD',
        'Maze_Wall': '/Game/Dev/Materials/MI_GrassTopSoilSides'}
 
 
@@ -50,6 +49,11 @@ def apply():
     n = 0
     for a in list(T._actors()):
         if T._folder(a) != 'Maze' or not isinstance(a, unreal.StaticMeshActor):
+            continue
+        if a.get_actor_label().startswith('Maze_Stair'):
+            # stairs are shown by the stair art (SM_PinkStone01), not by a skin twin (they overlapped)
+            if 'Skinned' in [str(t) for t in a.tags]:
+                a.tags = [t for t in a.tags if str(t) not in ('Skinned', 'VisGrey')]
             continue
         k = _kind(a.get_actor_label())
         if not k:
