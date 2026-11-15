@@ -73,6 +73,8 @@ def get_grid():
     for a in _actors():
         if a.get_actor_label() == GRID_LABEL:
             use_grid(a)
+            if 'EditorGrid' not in [str(t) for t in a.tags]:   # found in the game by BP_PathfindingCharacter (SnapCell)
+                a.tags = list(a.tags) + [unreal.Name('EditorGrid')]
             l = a.get_actor_location()
             return l.x, l.y
     globals()['U'] = 175.0
