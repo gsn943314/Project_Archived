@@ -54,15 +54,11 @@ GREY = '/Game/Project/Art/Materials/MI_Interactable'   # path grey, a little war
 
 
 def _disguise(a):
-    """Grey box view: every interactable piece (block, enemy, bridge, lift) gets the same slightly warm path-grey
-    (MI_Interactable) instead of purple / red / orange / yellow. Tag Disguise makes the blueprints' construction
-    scripts keep it; the edit mode highlights interactables under the cursor."""
+    """Tag Disguise: in the GAME every interactable piece (block, enemy, bridge, lift) gets the same amber path-grey
+    (MI_Interactable, set by the blueprints' BeginPlay) instead of purple / red / orange / yellow, and the edit mode
+    highlights interactables under the cursor. The editor keeps the real colours for the level designer."""
     if 'Disguise' not in [str(t) for t in a.tags]:
         a.tags = list(a.tags) + [unreal.Name('Disguise')]
-    m = unreal.load_asset(GREY)
-    for c in a.get_components_by_class(unreal.StaticMeshComponent):
-        for i in range(max(1, c.get_num_materials())):
-            c.set_material(i, m)
 
 
 def _clear():
