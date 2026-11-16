@@ -172,6 +172,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 
 - `BP_PuzzleGameInstance`：MasterVolume / MusicVolume / SfxVolume / Language（0 英文、1 繁中、2 簡中，語言按鈕循環切換），`LoadSettings`、`SaveSettings`（slot `PuzzleSettings`）、`ApplyAudio`。
 - `BP_MenuPlayerController`：建立 `WBP_MainMenu`、綁定按鈕、`ShowPanel`、`UpdateTexts`（中英文字串都在這裡）。新增關卡要加按鈕 `BtnLvlN` 與事件 `OnLvlN`。
+- **外觀（Project Archived 設計稿）**：背景 `Bg` = `/Game/Project/Art/UI/Menu/T_Menu_Background`（2560×1440，在 Level 0 PIE 開場小狐站在佈告欄前時用 SceneCapture 拍的：相機 (-1840, -430, 345)、pitch -13、yaw 11、FOV 74）；左上 `ProjectPill`（綠色圓角「Project」）＋ `TitleCard`（米色圓角卡片、`TitleText`「Archived」，`UpdateTexts` 固定寫 Archived，副標 `SubtitleText` 隱藏）；三個面板各包在米色圓角卡片 `MenuCard` / `LevelCard` / `SettingsCard`（Border，RoundedBox brush），`ShowPanel` 切換的是卡片（裡面的 `MainPanel` / `LevelPanel` / `SettingsPanel` 一律 Visible）；按鈕平常透明、滑過淺棕圓角底，文字深棕 30 Bold；音量 Slider 棕色軌道、綠色把手。
 - 主選單：Continue（有進度才顯示）/ New Game（→ Level 0）/ Level Select / Settings / Quit。關卡選擇只有 4 個：`BtnLvl0` Level 0（`Lvl_Level0_Davidtesting`）、`BtnLvl1` Level 1（`Lvl_Level1`）、`BtnLvl2` Level 2-1（`Lvl_Level2`）、`BtnLvl3` Level 2-2（`Lvl_Level2` + 開啟參數 `Stage2`）；`BtnLvl4–6` 隱藏。
 - 進度：`BP_PuzzleGameInstance.SaveProgress(Map, Options)` 存在設定存檔（`LastLevel` / `LastOptions`，slot `PuzzleSettings`）；`BP_PathfindingPlayerController` 每次進關卡時存一次，過了 Level 2 的 checkpoint（`OnStageCleared`）存成 `Stage2`。Continue = `OpenLevel(LastLevel, LastOptions)`。
 - `Stage2` 開啟參數：`BP_PathfindingPlayerController.SkipToStage2` 讓角色從 `StageGoal`（checkpoint）出發、目標換成 Point B、鏡頭用 `StageCam`。
