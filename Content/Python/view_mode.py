@@ -78,6 +78,75 @@ _BODY = {}
 # irregular rocks: the grey box is several boxes, one per slice along the longer horizontal axis, each fitted to that
 # slice's vertices (above the BODY_ONLY rubble line) and only as tall as that slice
 SLICED = {'SM_StoneCliff01': 4}
+# trees: trunk (2 stacked boxes fitted to the lower vertices) + canopy (2 slices fitted to the upper vertices),
+# instead of one big bounding box that swallows everything around the tree. TRUNK_H = height fraction where
+# the canopy starts. Per-actor opt-out: tag NoGreybox (e.g. Level 2 SM_CampTree2).
+TREE = {'SM_CampTree': 0.45}
+
+
+def _all_verts(mesh):
+    out = []
+    for sec in range(16):
+        try:
+            v = unreal.ProceduralMeshLibrary.get_section_from_static_mesh(mesh, 0, sec)[0]
+        except Exception:
+            break
+        if not v:
+            break
+        out.extend(v)
+    return out
+
+
+def _tree(mesh, trunk_h):
+    b = mesh.get_bounding_box()
+    v = _all_verts(mesh)
+    if not v:
+        return []
+    h = b.max.z - b.min.z
+    q = lambda s, f: s[min(len(s) - 1, max(0, int(len(s) * f)))]
+    out = []
+
+    def fit(pts, z0, z1, lo=.1, hi=.9):
+        if len(pts) < 6:
+            return
+        xs = sorted(p.x for p in pts); ys = sorted(p.y for p in pts)
+        x0, x1, y0, y1 = q(xs, lo), q(xs, hi), q(ys, lo), q(ys, hi)
+        out.append((unreal.Vector((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2),
+                    unreal.Vector(max(x1 - x0, 20), max(y1 - y0, 20), z1 - z0)))
+    zt = b.min.z + h * trunk_h
+    zm = b.min.z + h * trunk_h / 2
+    fit([p for p in v if p.z < zm], b.min.z, zm)
+    fit([p for p in v if zm <= p.z < zt], zm, zt)
+    top = [p for p in v if p.z >= zt]
+    if top:
+        along_x = (max(p.x for p in top) - min(p.x for p in top)) >= (max(p.y for p in top) - min(p.y for p in top))
+        al = sorted(p.x if along_x else p.y for p in top)
+        mid = q(al, .5)
+        for half in (0, 1):
+            pts = [p for p in top if ((p.x if along_x else p.y) < mid) == (half == 0)]
+            if pts:
+                fit(pts, zt, q(sorted(p.z for p in pts), .97), .04, .96)
+    return out
+
+
+def _clear_blocks():
+    """Grey boxes reaching more than 40 cm into a draggable block's footprint (both axes) are removed, so set dressing
+    around a block never hides it in the grey box view."""
+    blocks = [a for a in T._actors() if 'Editable' in [str(t) for t in a.tags]]
+    n = 0
+    for g in list(T._actors()):
+        if 'GreyProxy' not in [str(t) for t in g.tags]:
+            continue
+        p, q = g.get_actor_bounds(False)
+        for b in blocks:
+            o, e = b.get_actor_bounds(False)
+            ox = min(p.x + q.x, o.x + e.x) - max(p.x - q.x, o.x - e.x)
+            oy = min(p.y + q.y, o.y + e.y) - max(p.y - q.y, o.y - e.y)
+            if ox > 40 and oy > 40 and p.z + q.z > o.z - e.z + 20:
+                T._eas().destroy_actor(g)
+                n += 1
+                break
+    return n
 
 
 def _slices(mesh, k, above=0.2):
@@ -210,6 +279,11 @@ def sync_greybox():
             g.tags = [unreal.Name('VisGrey'), unreal.Name('GreyProxy')]
             n += 1
             continue
+        if mesh.get_name() in TREE and shape == 'box':
+            for i, (c, ext) in enumerate(_tree(mesh, TREE[mesh.get_name()])):
+                _proxy(f'{lab}_{i}', xf, c, ext, mat)
+                n += 1
+            continue
         if mesh.get_name() in SLICED and shape == 'box':
             for i, (c, ext) in enumerate(_slices(mesh, SLICED[mesh.get_name()], BODY_ONLY.get(mesh.get_name(), 0.2))):
                 _proxy(f'{lab}_{i}', xf, c, ext, mat)
@@ -272,6 +346,7 @@ def sync_greybox():
         center = unreal.Vector((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, (mn.z + mx.z) / 2)
         _proxy(lab, xf, center, mx - mn, mat)
         n += 1
+    n -= _clear_blocks()
     import storybook_skin as SK
     SK.tag_reveal()             # new GB_ proxies of a reveal-later area get its tag
     set_view(_S['final'])

@@ -386,7 +386,8 @@ def build_geometry(floor, pits, stairs, grid):
             a.set_actor_scale3d(scale); changed += 1
         smc = a.static_mesh_component
         m = _asset(mat)
-        if smc.get_material(0) != m:
+        # tag KeepMat: a hand-set material (e.g. Level 2 pit floors in MI_StorybookSoil) survives rebuilds
+        if smc.get_material(0) != m and 'KeepMat' not in [str(t) for t in a.tags]:
             smc.set_material(0, m)
     return bounds, changed
 
