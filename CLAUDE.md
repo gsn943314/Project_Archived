@@ -150,6 +150,17 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 15c. **骨架網格的材質要勾 `Used with Skeletal Mesh`**：沒勾時 Editor 只會在記憶體裡自動補勾（不存檔），所以自己電腦有時正常，隊友拉下來或打包後就變回預設灰格材質（「材質跑掉」）。`M_RockEnemy`（Level 1/2 的石頭野獸）就是這樣，已勾選並存檔。新匯入角色時記得檢查。
 11. **角色不走 / 路徑是 0 個點**：通常是關卡裡的 `RecastNavMesh-Default` 壞掉（log 出現 `Unable to find RecastNavMesh instance`）。修法：刪掉該 actor → 稍微移動 `NavMeshBoundsVolume` → 執行 `BUILDPATHS`（有時要做兩次）→ 存檔。改動地形或 NavMesh 範圍後都要重建。
 
+## 音效（`BP_SoundDirector`，`BP_PathfindingGameMode.BeginPlay` 生成，所有關卡）
+
+- 素材在 `/Game/Project/Audio`，目前全是程式合成的 placeholder（`Tools/Audio/gen_sfx.py <輸出資料夾>` 產生 WAV 再匯入）。**換正式音效＝匯入同名資產覆蓋**，藍圖不用改。3D 音效都用 `ATT_World`（4500 cm 內全音量、再 7000 cm 衰減完；鏡頭離地圖很遠，所以範圍大）。
+- Director 每幀看遊戲狀態播放（不改其他藍圖）：
+  - `Misc`：控制器 `bInIntro` 變 false 後開始 `BGM_Storybook_Loop`（0.32）＋ `AMB_Wilds_Loop`（0.55）各一次；`bDragging` 變 true → `SFX_BoxPick`、變 false → `SFX_BoxDrop`（2D）。
+  - `Fox`：小狐速度 > 60 時每走 125 cm 一步 `SFX_FoxStep_01–03`（在腳邊）；`AnimState` 變 3（被打倒）→ `SFX_Hit` ＋ `SFX_GlitchObject`（在小狐身上）；`BP_FoxLook.Stage` 改變 → `SFX_Shimmer`、`bFx` 開始 → `SFX_GlitchObject`。
+  - `Enemy`：每隻 `BP_EnemyChaser` 每移動 210 cm → `SFX_EnemyStep_01–03`（在牠身上）。
+  - `Mech`：`BP_Mechanism` Kind 0 升降梯 `bCurUp` 改變 → `SFX_Lift`；Kind 1 旋轉橋 `TargetYaw` 改變 → `SFX_BridgeRotate`；Kind 2 單向門 → `SFX_Gate`。
+  - `Glitch`：`MPC_Glitch.Amount` 往上越過 0.15（冷卻 0.9 s）→ 2D `SFX_GlitchScreen`（越強越大聲）；每個新的 `BP_PortalGlitch`（傳送門、GlitchSpot）→ `SFX_GlitchObject` 在它第一個撕裂的物件上。
+- 對話換句音效在 `BP_DialogueDriver.DriveOne`（偵測到新句時）：系統 `SFX_DlgSystem`、小狐 `SFX_DlgFox`。
+
 ## HUD（Creator Access 卡片，`WBP_PathfindingHUD`）
 
 - 設計稿 Creator_HUD_A（貼圖在 `/Game/Project/Art/UI/CreatorHUD/`：`T_UI_Creator_Card` 底板、`Header` 標題條、`ButtonMask` 按鈕共用遮罩、`PlayGlyph` / `ResetGlyph`）。所有關卡共用同一個 HUD，所以 Level 0 / 1 / 2 都會換上。
