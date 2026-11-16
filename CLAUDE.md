@@ -17,7 +17,7 @@ NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關
 | `Lvl_BlockTutorial` | 方塊教學（主關卡，手工設計） |
 | `Lvl_BlockTutorial_V2` | 舊版生成器（3 條來回走道、爬 2 階，seed 11） |
 | `Lvl_BlockTutorial_V5_Art` | V5 套用 MegaJam 美術（`/Game/Dev/Meshes`），每階 175 cm（樓梯模型高度壓成 0.5） |
-| `Lvl_Level2` | Level 2（Forgotten Wilds / Hollow Shrine，`level2_build.py` 生成；改版面改那支檔再 `build()`）：2-1 右邊填洞＋旋轉橋＋3 階樓梯、左邊填洞＋野獸（箱子擋門）＋水車升降梯（3 階，開場在上面）→ Checkpoint → 2-2 填洞、旋轉橋、守衛在高台（它的升降梯留在上面它就會坐下來攻擊）、填洞、升降梯（3 階）上到 B。16×20 格、8 階 |
+| `Lvl_Level2` | Level 2（Forgotten Wilds / Hollow Shrine，`level2_build.py` 生成；改版面改那支檔再 `build()`）：2-1 右邊填洞＋旋轉橋＋3 階樓梯、左邊填洞＋野獸（箱子擋門）＋水車升降梯（3 階，開場在上面）→ Checkpoint → 2-2 填洞、旋轉橋、守衛在高台（它的升降梯留在上面它就會坐下來攻擊）、填洞、升降梯（3 階）上到 B。16×20 格、8 階。美術（`Art` / `Art_L2Terrain` / `Art_L2Cliff` / `Art_Registry`）與佈景 `Art_L2Setdress`（散放的樹叢、藤蔓、岩石，無碰撞）整合自組員的 `/Game/Dev/Lvl_Level2Setdress_Lindatesting`；玩法（Maze、方塊、機關、終點 tag、相機、燈光）仍以這張為準，再整合時照同樣分法 |
 | `Lvl_Level0_Davidtesting` | Level 0（複製自組員的 `/Game/Dev/Lvl_Level0_Storybook`，手擺美術）：兩座島（草地範圍全用 Wide 鋪成灰盒地板，中間 3 格斷崖）；佈告欄在原位原朝向（路中間、正面朝起點，`NoticeBoard_Blocker` 隱形碰撞讓角色繞過），開場狐狸走到它前面（TargetPoint `IntroSpot`）看對話，點完進灰盒；起點 → 繞過佈告欄 → 3 格斷崖坑（`FillSlot_c4/5/6`）→ 樓梯 → 傳送門。3 個方塊上掛直立的石頭（Placement1），填進坑後最終畫面換成躺平的石橋（Placement2）。`Editor_Grid` tag `MazeGreyOnly`（Maze 只在灰盒顯示，美術地台＝最終畫面）；這關走道只有一格寬，`RecastNavMesh` 半徑用 35（120 會把走道侵蝕光）。灰盒總覽鏡頭是「接近 isometric 的窄視角透視」（`OverviewCamera` FOV 30°、pitch -45°、yaw -45°、距離約 5600 cm；純正交鏡頭和跟拍鏡頭混合時會飛很遠、看起來也怪，已改回透視；`ZoomCamera` 仍支援正交鏡頭＝改 OrthoWidth），PLAY 跟拍仍是第三人稱 |
 | `Lvl_Level1` | Level 1（原 `Lvl_Camp_Whitebox_Davidtesting` 改名）Camp 手擺美術關（Storybook 外皮，Level 0 的下一關）：灰盒總覽鏡頭和 Level 0 一樣用俯角 45° 的窄視角（FOV 60°、距離約 5600 cm；更窄要放更遠，Storybook 後製會讓遠處整片發白），終點傳送門 `SM_StoneArchway` 產生拱門形 `GB_` |
 | `Lvl_BlockTutorial_V3/V4/V5` | 新版生成器：蜿蜒折線路徑、約 10 階高低差（seed 33/55/77） |
