@@ -106,6 +106,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
   - 終點（角色的 `FinalTarget`，沒有就用 `TargetPoint`）→ 出口（滑鼠在終點 300 cm 內才顯示）
 - **程式**：全部在 `/Game/Project/Programming/Blueprints/Pathfinding/BP_GizmoDirector`（複製自組員的 `/Game/Dev/Blueprints/BP_GizmoDirector`，Dev 原版不動；每幀讀 `BP_PathfindingPlayerController` 的 `Phase` / `bDragging` / `Selected` 與游標下的物件，自己生成、擺放圖標）。技術藍圖只改了一處：`BP_PathfindingPlayerController.ReceiveBeginPlay` 最後 spawn 這個 director。拿掉那一行就整個關掉。
 - **大小 / 朝向**：`IconScale`（BeginPlay 設 8，出口 ×1.6）。直立圖標（升降、出口）朝 `FaceDir`＝每幀依玩家目前鏡頭（`GetPlayerCameraManager.GetCameraRotation`）的水平反方向重算，旋轉 / 平移視角時會跟著轉向鏡頭；平躺的移動 / 旋轉圖標不受影響。
+- **選取高亮（正式版，Shipping 也有）**：控制器原本用 `DrawDebugBox` 畫懸停 / 選中 / 可放（綠）/ 不可放（紅），Shipping 會整個拿掉。`BP_GizmoDirector` 另外用真模型畫：`PlaceShell` 把方塊的 mesh 複製成放大 4 % 的外殼套上高亮材質（`HoverShell` 懸停淡青、`SelShell` 選中琥珀 / 拖曳時綠或紅），拖曳時 `DropBox`（方塊）擺在 `ComputeDrop` 的落點。材質 `/Game/Dev/Materials/Highlight/`（`M_EditHighlight` 半透明 unlit、運動模糊後渲染，`MI_Highlight_Hover/Selected/Valid/Invalid` 只差 `Color`；`Fill` / `Edge` / `Glow` 調濃淡），重建：`Tools/Highlight/build_highlight.py`。Overlay Material 在這些方塊上不會顯示，所以用外殼。控制器的 debug 繪製保留（開發時照樣看得到）。
 - **美術**：模型 `/Game/Dev/Meshes/UI/SM_Gizmo*`（材質槽 `IceFace` / `LilacSide` / `LilacDim`）。材質 `/Game/Dev/Materials/Gizmo/`：
   - `M_Gizmo`：Translucent + Unlit + **Disable Depth Test**（畫在最上層）+ Translucency Pass **After Motion Blur**（避開水彩後處理，不會被洗淡）。`MI_Gizmo_Face` / `Edge` / `Dim` 是正面 / 側面 / 升降的暗箭頭。
   - Custom Primitive Data 第 0 位 `Dim`：0 = 亮、1 = 暗。
