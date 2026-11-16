@@ -152,13 +152,13 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 
 ## 音效（`BP_SoundDirector`，`BP_PathfindingGameMode.BeginPlay` 生成，所有關卡）
 
-- 素材在 `/Game/Project/Audio`，目前全是程式合成的 placeholder（`Tools/Audio/gen_sfx.py <輸出資料夾>` 產生 WAV 再匯入）。**換正式音效＝匯入同名資產覆蓋**，藍圖不用改。3D 音效都用 `ATT_World`（4500 cm 內全音量、再 7000 cm 衰減完；鏡頭離地圖很遠，所以範圍大）。
+- 素材在 `/Game/Project/Audio`，目前全是程式合成的 placeholder（`Tools/Audio/gen_sfx.py <輸出資料夾>` 產生 WAV 再匯入）。**換正式音效＝匯入同名資產覆蓋**，藍圖不用改。3D 音效用 `ATT_World`（4500 cm 內全音量、再 7000 cm 衰減完；鏡頭離地圖很遠，所以範圍大）；敵人腳步用 `ATT_Near`（900 / 2600），而且音量再乘上「牠和小狐的距離」（5 m 內全音量、30 m 外無聲），因為聽者是鏡頭、不是小狐。合成器 `gen_sfx.py <dir> v2` 產生第二版（輕巧的小狐腳步、4 種柔和 Glitch、嗡＋咔的旋轉橋 / 門、拿起方塊、傳送聲）。
 - Director 每幀看遊戲狀態播放（不改其他藍圖）：
-  - `Misc`：控制器 `bInIntro` 變 false 後開始 `BGM_Storybook_Loop`（0.32）＋ `AMB_Wilds_Loop`（0.55）各一次；`bDragging` 變 true → `SFX_BoxPick`、變 false → `SFX_BoxDrop`（2D）。
-  - `Fox`：小狐速度 > 60 時每走 125 cm 一步 `SFX_FoxStep_01–03`（在腳邊）；`AnimState` 變 3（被打倒）→ `SFX_Hit` ＋ `SFX_GlitchObject`（在小狐身上）；`BP_FoxLook.Stage` 改變 → `SFX_Shimmer`、`bFx` 開始 → `SFX_GlitchObject`。
+  - `Misc`：控制器 `bInIntro` 變 false 後開始 `BGM_Storybook_Loop`（0.32）＋ `AMB_Wilds_Loop`（0.55）各一次；`bDragging` 變 true → `SFX_BoxPick`、變 false → `SFX_BoxDrop`（2D）；控制器 `bInPortal` 變 true（走進傳送門，三個傳送門都是）→ `SFX_Portal`。
+  - `Fox`：小狐速度 > 60 時每走 55 cm 一步 `SFX_FoxStep_01–04`（輕的小動物腳步，在腳邊）；`AnimState` 變 3（被打倒）→ `SFX_Hit` ＋ 隨機 Glitch（在小狐身上）；`BP_FoxLook.Stage` 改變 → `SFX_Shimmer`、`bFx` 開始 → 隨機 Glitch。
   - `Enemy`：每隻 `BP_EnemyChaser` 每移動 210 cm → `SFX_EnemyStep_01–03`（在牠身上）。
   - `Mech`：`BP_Mechanism` Kind 0 升降梯 `bCurUp` 改變 → `SFX_Lift`；Kind 1 旋轉橋 `TargetYaw` 改變 → `SFX_BridgeRotate`；Kind 2 單向門 → `SFX_Gate`。
-  - `Glitch`：`MPC_Glitch.Amount` 往上越過 0.15（冷卻 0.9 s）→ 2D `SFX_GlitchScreen`（越強越大聲）；每個新的 `BP_PortalGlitch`（傳送門、GlitchSpot）→ `SFX_GlitchObject` 在它第一個撕裂的物件上。
+  - `Glitch`：`MPC_Glitch.Amount` 往上越過 0.15（冷卻 0.9 s）→ 2D 隨機一個 `SFX_Glitch_01–04`（Director 的 `Glitches` 陣列；越強越大聲，走進傳送門期間只有 30%）；每個新的 `BP_PortalGlitch`（傳送門、GlitchSpot）→ 隨機 Glitch 在它第一個撕裂的物件上。
 - 對話換句音效在 `BP_DialogueDriver.DriveOne`（偵測到新句時）：系統 `SFX_DlgSystem`、小狐 `SFX_DlgFox`。
 
 ## HUD（Creator Access 卡片，`WBP_PathfindingHUD`）

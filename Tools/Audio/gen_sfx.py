@@ -297,7 +297,129 @@ def bgm():
     return out
 
 
-if __name__ == '__main__':
+
+# ================================================================ v2 (feedback: softer glitches, light fox, clack mechanisms)
+def tap(seed):
+    """light little-animal paw tap: short, high, soft"""
+    r = random.Random(seed)
+    k = n(0.06)
+    f = r.uniform(520, 700)
+    body = [math.sin(TAU * f * i / SR) * env(i, 0.001, 0.012, k) for i in range(k)]
+    tick = [x * env(i, 0.0005, 0.006, k) for i, x in enumerate(hp(noise(k, seed), 0.6))]
+    brush = [x * env(i, 0.001, 0.02, k) for i, x in enumerate(lp(hp(noise(k, seed + 50), 0.2), 0.5))]
+    return fade(mix([b * 0.5 for b in body], [t * 0.35 for t in tick], [b * 0.4 for b in brush]), 0.001, 0.01)
+
+
+def soft_glitch(seed):
+    """digital chatter, low-passed (no harsh squares), random short dropouts and pitch-stepped blips"""
+    r = random.Random(seed)
+    sec = r.uniform(0.45, 0.9)
+    k = n(sec)
+    out = [0.0] * k
+    i = 0
+    while i < k:
+        seg = n(r.uniform(0.015, 0.07))
+        kind = r.random()
+        f = r.choice([180, 240, 320, 400, 520, 640])
+        hold, v, ph = r.randint(6, 30), 0.0, 0.0
+        amp = r.uniform(0.3, 0.8)
+        for j in range(seg):
+            if i + j >= k:
+                break
+            if kind < 0.35:          # sine blip, stepped pitch
+                ph += TAU * f / SR
+                x = math.sin(ph)
+            elif kind < 0.6:         # sample-and-hold crackle
+                if j % hold == 0:
+                    v = r.uniform(-1, 1)
+                x = v
+            elif kind < 0.78:
+                x = 0.0
+            else:                    # down sweep (tape stop)
+                ph += TAU * f * (1 - 0.7 * j / seg) / SR
+                x = math.sin(ph)
+            out[i + j] = x * amp * min(1, j / 40) * min(1, (seg - j) / 40)
+        i += seg
+    out = lp(out, 0.35)
+    q = 1 / 24
+    out = [round(x / q) * q for x in out]
+    return fade(lp(out, 0.6), 0.004, 0.08)
+
+
+def soft_pick():
+    """lift a block: soft wooden knock + tiny rising air"""
+    k = n(0.22)
+    knock = [math.sin(TAU * 330 * i / SR) * env(i, 0.001, 0.025, k) * 0.6 for i in range(k)]
+    knock2 = [math.sin(TAU * 520 * i / SR) * env(i, 0.001, 0.015, k) * 0.25 for i in range(k)]
+    air = lp(noise(k, 61), 0.08)
+    air = [a * math.sin(math.pi * i / k) * 0.5 for i, a in enumerate(air)]
+    return fade(mix(knock, knock2, air), 0.001, 0.03)
+
+
+def clack(f=240, dec=0.04, seed=0, amp=1.0):
+    k = n(0.25)
+    r = random.Random(seed)
+    tone = [math.sin(TAU * f * i / SR) * env(i, 0.0005, dec, k) for i in range(k)]
+    tone2 = [math.sin(TAU * f * 2.7 * i / SR) * env(i, 0.0005, dec * 0.5, k) * 0.4 for i in range(k)]
+    nz = [x * env(i, 0.0005, dec * 0.4, k) * 0.5 for i, x in enumerate(hp(noise(k, seed + 7), 0.3))]
+    return [x * amp for x in mix(tone, tone2, nz)]
+
+
+def place(dst, src, t):
+    o = n(t)
+    for i, x in enumerate(src):
+        if o + i < len(dst):
+            dst[o + i] += x
+
+
+def mech(sec, clicks, hum_f, seed, end_f):
+    """motor hum (low, smooth) + ratchet clacks + final heavy clack"""
+    k = n(sec)
+    out = []
+    for i in range(k):
+        t = i / SR
+        e = min(1, t / 0.2) * (1 if t < sec - 0.35 else max(0, (sec - 0.15 - t) / 0.2))
+        hum = math.sin(TAU * hum_f * t) + 0.35 * math.sin(TAU * hum_f * 2 * t) + 0.15 * math.sin(TAU * hum_f * 3.01 * t)
+        out.append(hum * e * 0.22 * (0.85 + 0.15 * math.sin(TAU * 3 * t)))
+    out = lp(out, 0.3)
+    for c in range(clicks):
+        place(out, clack(300, 0.03, seed + c, 0.35), 0.18 + c * (sec - 0.6) / max(1, clicks))
+    place(out, clack(end_f, 0.07, seed + 99, 0.9), sec - 0.3)
+    return fade(out, 0.005, 0.05)
+
+
+def portal():
+    """teleport: rising airy whoosh + chime shimmer + soft low bloom"""
+    sec = 1.8
+    k = n(sec)
+    air = lp(noise(k, 71), 0.05)
+    out = []
+    ph = 0.0
+    for i in range(k):
+        t = i / SR
+        e = math.sin(math.pi * min(1, t / sec)) ** 1.5
+        ph += TAU * (200 + 700 * (t / sec) ** 2) / SR
+        out.append(air[i] * e * 1.8 + math.sin(ph) * e * 0.18 + math.sin(TAU * 70 * t) * e * 0.2)
+    for j, f in enumerate([1047, 1319, 1568, 2093]):
+        o = n(0.5 + j * 0.12)
+        for i in range(k - o):
+            out[o + i] += math.sin(TAU * f * i / SR) * env(i, 0.01, 0.4, k) * 0.12
+    return fade(out, 0.01, 0.1)
+
+
+def v2():
+    for v in range(4):
+        write(f'SFX_FoxStep_0{v + 1}', tap(300 + v), 0.35)
+        write(f'SFX_Glitch_0{v + 1}', soft_glitch(400 + v * 7), 0.45)
+    write('SFX_BoxPick', soft_pick(), 0.5)
+    write('SFX_BridgeRotate', mech(1.6, 3, 55, 500, 150), 0.7)
+    write('SFX_Gate', mech(1.1, 2, 70, 600, 210), 0.6)
+    write('SFX_Portal', portal(), 0.6)
+
+
+if __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[2] == 'v2':
+    v2()
+elif __name__ == '__main__':
     for v in range(3):
         write(f'SFX_FoxStep_0{v + 1}', step(100 + v), 0.6)
         write(f'SFX_EnemyStep_0{v + 1}', enemy_step(200 + v), 0.8)
