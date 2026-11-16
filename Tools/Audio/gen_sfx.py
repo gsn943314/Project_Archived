@@ -417,7 +417,28 @@ def v2():
     write('SFX_Portal', portal(), 0.6)
 
 
-if __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[2] == 'v2':
+# ================================================================ v3: fox paw step = soft filtered noise, no tone
+def paw(seed):
+    """small animal on dirt/grass: a soft muffled pat (band-passed noise) + faint grit, no pitched component"""
+    r = random.Random(seed)
+    k = n(0.09)
+    base = noise(k, seed)
+    pat = lp(hp(base, 0.02), r.uniform(0.10, 0.16))          # muffled mid-low pat
+    pat = [x * env(i, 0.003, 0.018, k) for i, x in enumerate(pat)]
+    grit = lp(hp(noise(k, seed + 31), 0.35), 0.6)              # dry little grass/dirt crackle
+    grit = [x * env(i, 0.006, 0.02, k) * r.uniform(0.15, 0.3) for i, x in enumerate(grit)]
+    thud = lp([x * env(i, 0.002, 0.012, k) for i, x in enumerate(noise(k, seed + 77))], 0.03)
+    return fade(mix([p * 1.6 for p in pat], grit, [t * 3.0 for t in thud]), 0.002, 0.02)
+
+
+def v3():
+    for v in range(4):
+        write(f'SFX_FoxStep_0{v + 1}', paw(700 + v * 13), 0.3)
+
+
+if __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[2] == 'v3':
+    v3()
+elif __name__ == '__main__' and len(sys.argv) > 2 and sys.argv[2] == 'v2':
     v2()
 elif __name__ == '__main__':
     for v in range(3):
