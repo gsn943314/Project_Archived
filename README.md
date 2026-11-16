@@ -2,14 +2,14 @@
 tags: [Experiment, AI, Active]
 ---
 
-# Project Archive (project_archive)
+# Project Archived (Project_Archived)
 
 這是一個 Unreal Engine 實驗專案，用 Claude Code 透過 `unreal-mcp` 直接操作 Editor，在裡面做了一個 NavMesh 尋路解謎原型。玩家在 Play 模式中可以移動、旋轉、縮放障礙物，預覽角色從 A 點到 B 點最短的可行走路線；按下 PLAY 後，鏡頭會跟著角色走。如果路被擋住，角色會停在障礙物前，然後自動回到編輯模式。
 
 ## 開啟方式
 
-1. 安裝 Git LFS 後 clone：`git lfs install && git clone https://github.com/gsn943314/project_archive.git`
-2. 用 Unreal Editor 5.9 開啟 `project_archive.uproject`（預設會開 `Lvl_BlockTutorial`）
+1. 安裝 Git LFS 後 clone：`git lfs install && git clone https://github.com/gsn943314/Project_Archived.git`
+2. 用 Unreal Editor 5.9 開啟 `Project_Archived.uproject`（預設會開 `Lvl_BlockTutorial`）
 3. 按 Play（PIE）
 
 ## 關卡

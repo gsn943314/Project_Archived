@@ -1,4 +1,4 @@
-# Project Archive (project_archive) — AI 協作指南
+# Project Archived (Project_Archived) — AI 協作指南
 
 給在這個專案裡工作的 AI 助手（Claude Code / Codex）與組員看的規則。回覆一律使用繁體中文。
 
@@ -6,7 +6,7 @@
 
 NavMesh 尋路解謎原型。編輯階段（灰盒）玩家拖曳方塊與機關，按 PLAY 後切換成最終畫面，角色自動走最短路線到 B 點。
 
-- 引擎：Unreal Engine 5.9，專案檔 `project_archive.uproject`（原 `mcptest.uproject`）
+- 引擎：Unreal Engine 5.9，專案檔 `Project_Archived.uproject`（原 `mcptest.uproject` → `project_archive.uproject`）
 - AI 透過 `unreal-mcp`（Editor 內建 MCP server，`http://127.0.0.1:8000/mcp`，設定在 `.mcp.json`）操作 Editor
 - 預設地圖：`/Game/Project/Maps/Lvl_BlockTutorial`
 
@@ -185,7 +185,7 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 ## 協作規則
 
 - `.uasset` / `.umap` 是二進位檔（Git LFS），**無法合併**。同一個檔案同一時間只能一個人改。
-- 專案已改名：GitHub repo `gsn943314/project_archive`（舊網址會自動轉址，建議 `git remote set-url origin https://github.com/gsn943314/project_archive.git`），專案檔 `project_archive.uproject`（pull 之後改開這個檔；舊的 `mcptest.uproject` 已不存在）。本機資料夾名稱不影響，可以不改。
+- 專案已改名：GitHub repo `gsn943314/Project_Archived`（舊網址會自動轉址，建議 `git remote set-url origin https://github.com/gsn943314/Project_Archived.git`），專案檔 `Project_Archived.uproject`（pull 之後改開這個檔；舊的 `mcptest.uproject` 已不存在）。本機資料夾名稱不影響，可以不改。
 - 開工前先 `git pull`；動到共用藍圖（上表那些）前先在群組說一聲。
 - 新關卡請複製一張現有地圖改名（例如 `Lvl_<名字>_xxx`），在自己的地圖上做實驗。
 - 開發紀錄寫在 `devlog/`。
