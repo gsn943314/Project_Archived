@@ -188,4 +188,4 @@ Phase：0 = PLANNING（灰盒）、1 = RUNNING（最終畫面）、2 = FINISHED�
 - 專案已改名：GitHub repo `gsn943314/Project_Archived`（舊網址會自動轉址，建議 `git remote set-url origin https://github.com/gsn943314/Project_Archived.git`），專案檔 `Project_Archived.uproject`（pull 之後改開這個檔；舊的 `mcptest.uproject` 已不存在）。本機資料夾名稱不影響，可以不改。
 - 開工前先 `git pull`；動到共用藍圖（上表那些）前先在群組說一聲。
 - 新關卡請複製一張現有地圖改名（例如 `Lvl_<名字>_xxx`），在自己的地圖上做實驗。
-- 開發紀錄寫在 `devlog/`。
+- 開發紀錄：中文原稿寫在 `devlog/`（只留本機，已 gitignore）；GitHub 上公開的是英文版 `devlog/en/`（新增中文 devlog 後要同步翻成英文放進去並更新 `devlog/en/README.md`）。線上圖文版 devlog（case study）在作品集網站 https://davidkuo.tech/projects/project_archived ，原始碼在 `~/Documents/Projects/Active/david-portfolio-website/3d-glass-portfolio`（`app/projects/project_archived/page.tsx`、`data/project-archive.json`）；提到「線上 devlog」指的就是它。

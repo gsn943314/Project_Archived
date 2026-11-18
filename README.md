@@ -1,87 +1,88 @@
----
-tags: [Experiment, AI, Active]
----
+# Project Archived
 
-# Project Archived (Project_Archived)
+> A forgotten fox. A half-deleted demo. Rearrange the level and let it find its way out.
 
-這是一個 Unreal Engine 實驗專案，用 Claude Code 透過 `unreal-mcp` 直接操作 Editor，在裡面做了一個 NavMesh 尋路解謎原型。玩家在 Play 模式中可以移動、旋轉、縮放障礙物，預覽角色從 A 點到 B 點最短的可行走路線；按下 PLAY 後，鏡頭會跟著角色走。如果路被擋住，角色會停在障礙物前，然後自動回到編輯模式。
+**Project Archived** is a storybook puzzle game made in four days for the **2026 Epic AI MegaJam** by *The Team With No Sleep*.
 
-## 開啟方式
+You never control the fox. You edit the level — drag blocks, rotate bridges, raise lifts — then press **Play**, and the fox follows the shortest path it can find. If the way is blocked, it walks as far as it can, and you go back to editing.
 
-1. 安裝 Git LFS 後 clone：`git lfs install && git clone https://github.com/gsn943314/Project_Archived.git`
-2. 用 Unreal Editor 5.9 開啟 `Project_Archived.uproject`（預設會開 `Lvl_BlockTutorial`）
-3. 按 Play（PIE）
+- ▶ **Play on itch.io:** https://linboxxx.itch.io/project-archived
+- 🏆 **MegaJam entry:** https://itch.io/jam/2026-epic-ai-megajam/rate/5377714
+- 📖 **Case study & devlog:** https://davidkuo.tech/projects/project_archived
 
-## 關卡
+![Main menu](Docs/main_menu.png)
 
-- `Lvl_BlockTutorial`：方塊教學主關卡
-- `Lvl_BlockTutorial_V2`：舊版生成器（來回走道）
-- `Lvl_BlockTutorial_V3/V4/V5`：新版生成器，蜿蜒路徑、約 10 階高低差
-- `Lvl_Terraces`：S 型往上爬，含火 / 霧 / 水 / 船 / 聲音誘餌 / 壓力板 / 門 / 橋
-- `Lvl_PathfindingPuzzle`：最早的平面原型
+## How it plays
 
-隨機生成：開一張 `Lvl_BlockTutorial*` 地圖，點選單 **Puzzle → Generate Random Block Tutorial** 或工具列 **Random Level**。
+1. **Edit (greybox).** The world is shown as an unfinished greybox. Drag blocks to fill pits, click mechanisms (lifts, rotating bridges, one-way gates) to change the terrain. A preview line shows the fox's current route.
+2. **Play (final art).** The level switches to its finished storybook look and the fox walks the NavMesh shortest path to the exit — avoiding (or being caught by) rock beasts on the way.
+3. **Blocked?** The fox walks as far as it can, stops, and the game returns to edit mode.
 
-## 關卡總覽截圖
+Over three levels the fox's own look is "restored" — from grey model to white model to full colour — as the half-deleted demo comes back together.
 
-| | |
-|---|---|
-| `Lvl_BlockTutorial`<br>![](Docs/overviews/Lvl_BlockTutorial.png) | `Lvl_BlockTutorial_V2`<br>![](Docs/overviews/Lvl_BlockTutorial_V2.png) |
-| `Lvl_BlockTutorial_V3`<br>![](Docs/overviews/Lvl_BlockTutorial_V3.png) | `Lvl_BlockTutorial_V4`<br>![](Docs/overviews/Lvl_BlockTutorial_V4.png) |
-| `Lvl_BlockTutorial_V5`<br>![](Docs/overviews/Lvl_BlockTutorial_V5.png) | `Lvl_Terraces`<br>![](Docs/overviews/Lvl_Terraces.png) |
-| `Lvl_PathfindingPuzzle`<br>![](Docs/overviews/Lvl_PathfindingPuzzle.png) | |
+## Team
 
-## 開始畫面與設定
+| Name | Role | Responsibilities |
+|------|------|------------------|
+| David Kuo | Gameplay Engineer | Pathfinding and puzzle systems, procedural level tools, edit and play modes, game flow from menu to ending, integrating the team's art and characters |
+| Haibei Ma | 3D Artist & Animator | The fox and the rock enemy: modeling, texturing, rigging and animation |
+| Yuxuan He | Technical Artist | Art direction, the storybook look, set dressing for each level, opening and ending cutscenes |
 
-- 地圖 `Lvl_MainMenu`（打包後的預設地圖）：開始新遊戲、關卡選擇（7 個關卡）、設定、離開。
-- 設定：主音量 / 背景音樂 / 音效（Sound Class `SC_Music`、`SC_SFX`，Sound Mix `SMix_Settings`）、語言（English / 繁體中文）、快捷鍵說明。設定存在 SaveGame `PuzzleSettings`，由 `BP_PuzzleGameInstance` 讀寫並在每個關卡開始時套用。
-- 遊戲中按 `Esc` 回到主選單。PLAY 時鏡頭為第三人稱跟在角色後方。
-- 在 Editor 測試：打開 `Lvl_MainMenu` 再按 Play。
+## Built with
 
-![](Docs/main_menu.png)
+Unreal Engine 5.9 · Blueprint · Python editor tooling · unreal-mcp — much of the Editor work was driven by AI agents (Claude Code / Codex) through the Editor's built-in MCP server.
 
-## 關卡編輯工具（Editor 模式，不用按 Play）
+## Running the project
 
-由 `Content/Python/puzzle_level_tools.py`、`live_edit.py` 提供，選單 **Puzzle** 與工具列按鈕（有圖示與文字）。關卡由 `Editor` 資料夾裡的標記描述。
+1. Install Git LFS, then clone:
+   ```bash
+   git lfs install
+   git clone https://github.com/gsn943314/Project_Archived.git
+   ```
+2. Open `Project_Archived.uproject` with Unreal Engine 5.9.
+3. Open `Lvl_MainMenu` and press Play (PIE).
 
-- **Live Edit（預設開啟）**：拖動標記、方塊、敵人，停下約 0.4 秒會**磁吸**到格子（350 cm 格、175 cm 一階；方塊轉角吸附 90°、細方塊吸附半格、自動落到地面），約 0.6 秒後地形**即時重建**。警告會以紅字顯示在場景上方。工具列 **Live** 可開關。
-- Live Edit 不會自動存檔，改完請 Ctrl+S；**Rebuild Level** 會重建導航並存檔。
+### Levels
 
-| 標記 | 外觀 | 作用 |
-|---|---|---|
-| `PathA_00, PathA_01…` | 綠色發光球 | 主路徑，依編號順序連成走道（先沿 X 再沿 Y）。**拖動**改路線；**上下移動**（每 175 cm 一階）會在走道上自動長樓梯 |
-| `PathB_…`、`PathC_…` | 同上 | 支線（例如分岔的安全繞路） |
-| `Floor_*` | 藍色薄片 | 額外的一格地面／凹槽 |
-| `Hole_*` | Target Point | 往下凹的洞，要用方塊填 |
-| 紫色方塊、紅色敵人 | 直接拖 | 放在牆上時，Rebuild 會自動在下面挖一格凹槽 |
+| Map | Content |
+|-----|---------|
+| `Lvl_MainMenu` | Start screen, level select, settings (default packaged map) |
+| `Lvl_Level0` | Two islands and a chasm: build a stone bridge with blocks |
+| `Lvl_Level1` | The camp: pits, a one-way gate and a rock beast |
+| `Lvl_Level2` | Forgotten Wilds / Hollow Shrine: lifts, rotating bridges, a checkpoint, and the ending |
 
-按鈕：`Path Node`（選取某個路徑點時插在它後面）、`Floor`、`Hole`、`Block`、`Enemy`、`Rebuild Level`；選單另有 Add Branch、Add Thin Block。Point A 放在 PathA 第一個點、Point B 放在最後一個點。
+Prototype and generator maps (`Lvl_BlockTutorial*`, `Lvl_Terraces`, `Lvl_PathfindingPuzzle`) are kept for reference.
 
-![](Docs/editor_markers.png)
+### Controls (edit phase)
 
-## 操作（PIE 編輯階段）
+| Input | Action |
+|-------|--------|
+| Left-drag a block | Move it (green = valid drop, red = invalid) |
+| Click a mechanism | Trigger it (lift / bridge / gate) |
+| Left-drag empty space, arrow keys | Pan |
+| Right-drag | Orbit |
+| Mouse wheel | Zoom |
+| HUD ▶ PLAY / ↺ RESET | Run / restart |
+| `Esc` | Back to main menu |
 
-| 操作 | 功能 |
-|------|------|
-| 左鍵拖曳方塊 | 移動；綠框 = 可以放，紅框 = 不行（放開會回到原位） |
-| `W` / `E` / `R` | 切換 移動 / 旋轉 / 縮放 |
-| 滾輪 | 已選方塊在旋轉/縮放模式：旋轉 90° / 縮放 1U；否則縮放鏡頭 |
-| 右鍵或中鍵拖曳、方向鍵 | 平移鏡頭 |
-| `F` | 鏡頭回預設位置 |
-| HUD ▶ PLAY / ↺ RESET | 開始 / 重來 |
+## Level editing tools
 
-## 用 AI 協作
+Editor-side Python tools (`Content/Python/`) add a **Puzzle** menu and toolbar buttons: levels are described by markers (path nodes, holes, floor marks) and the terrain, stairs, NavMesh and greybox proxies are rebuilt live as you move them. A **Grey / Final** toggle switches between the greybox and the final art. See [`CLAUDE.md`](CLAUDE.md) for the full spec.
 
-`.mcp.json` 已設定好 `unreal-mcp`（Editor 開著時在 `http://127.0.0.1:8000/mcp`）。在專案根目錄開 Claude Code 或 Codex，AI 會讀 `CLAUDE.md` / `AGENTS.md` 了解專案規則。
+![Editor markers](Docs/editor_markers.png)
 
-## 資料夾結構
+## Repository layout
 
 ```text
 Content/Project/
-├── Art/            Meshes, Materials, Textures, Animations, VFX, UI
-├── Programming/    Blueprints, Input, Data, AI, UI
-├── Maps/           所有關卡
-Content/Python/     隨機關卡生成器與 Editor 選單按鈕
+├── Art/            Meshes, materials, textures, animations, VFX, UI
+├── Programming/    Blueprints, input, data, AI, UI
+└── Maps/           All levels
+Content/Python/     Level generator, rebuild / live-edit tools, editor menus
+Tools/              Asset build scripts (occlusion, glitch, highlight, audio)
+devlog/en/          Development log
 ```
 
-開發紀錄放在 [devlog/](devlog/PROJECT-HUB.md)。
+## Devlog
+
+Day-by-day notes are in [`devlog/en/`](devlog/en/README.md); the illustrated case study is at [davidkuo.tech/projects/project_archived](https://davidkuo.tech/projects/project_archived).

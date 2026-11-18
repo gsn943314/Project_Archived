@@ -19,3 +19,7 @@ Thumbs.db
 *.xcodeproj/
 *.xcworkspace/
 __pycache__/
+
+# Devlog: Chinese originals stay local, English versions are published
+/devlog/*
+!/devlog/en/
