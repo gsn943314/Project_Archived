@@ -82,7 +82,7 @@ Prototype and generator maps (`Lvl_BlockTutorial*`, `Lvl_Terraces`, `Lvl_Pathfin
 
 ## Level editing tools
 
-Editor-side Python tools (`Content/Python/`) add a **Puzzle** menu and toolbar buttons: levels are described by markers (path nodes, holes, floor marks) and the terrain, stairs, NavMesh and greybox proxies are rebuilt live as you move them. A **Grey / Final** toggle switches between the greybox and the final art. See [`CLAUDE.md`](CLAUDE.md) for the full spec.
+Editor-side Python tools (`Content/Python/`) add a **Puzzle** menu and toolbar buttons: levels are described by markers (path nodes, holes, floor marks) and the terrain, stairs, NavMesh and greybox proxies are rebuilt live as you move them. A **Grey / Final** toggle switches between the greybox and the final art.
 
 ![Editor markers](Docs/editor_markers.png)
 

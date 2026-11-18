@@ -23,3 +23,7 @@ __pycache__/
 # Devlog: Chinese originals stay local, English versions are published
 /devlog/*
 !/devlog/en/
+
+# AI agent instructions stay local
+/CLAUDE.md
+/AGENTS.md
