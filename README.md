@@ -1,3 +1,5 @@
+![Project Archived](Docs/itch/header.jpg)
+
 # Project Archived
 
 > A forgotten fox. A half-deleted demo. Rearrange the level and let it find its way out.
@@ -10,7 +12,9 @@ You never control the fox. You edit the level — drag blocks, rotate bridges, r
 - 🏆 **MegaJam entry:** https://itch.io/jam/2026-epic-ai-megajam/rate/5377714
 - 📖 **Case study & devlog:** https://davidkuo.tech/projects/project_archived
 
-![Main menu](Docs/main_menu.png)
+## Trailer
+
+[![Project Archived trailer](https://img.youtube.com/vi/G1B16CLmRtI/maxresdefault.jpg)](https://www.youtube.com/watch?v=G1B16CLmRtI)
 
 ## How it plays
 
@@ -19,6 +23,17 @@ You never control the fox. You edit the level — drag blocks, rotate bridges, r
 3. **Blocked?** The fox walks as far as it can, stops, and the game returns to edit mode.
 
 Over three levels the fox's own look is "restored" — from grey model to white model to full colour — as the half-deleted demo comes back together.
+
+## Screenshots
+
+| | |
+|---|---|
+| <img src="Docs/itch/shot_01.jpg" width="100%"> | <img src="Docs/itch/shot_02.jpg" width="100%"> |
+| <img src="Docs/itch/shot_03.jpg" width="100%"> | <img src="Docs/itch/shot_04.jpg" width="100%"> |
+| <img src="Docs/itch/shot_05.jpg" width="100%"> | <img src="Docs/itch/shot_06.jpg" width="100%"> |
+| <img src="Docs/itch/shot_07.jpg" width="100%"> | <img src="Docs/itch/shot_08.jpg" width="100%"> |
+| <img src="Docs/itch/shot_09.jpg" width="100%"> | <img src="Docs/itch/shot_10.jpg" width="100%"> |
+| <img src="Docs/itch/shot_11.jpg" width="100%"> |  |
 
 ## Team
 
