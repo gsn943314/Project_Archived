@@ -1,4 +1,4 @@
-![Project Archived](Docs/itch/header.jpg)
+![Project Archived](Docs/itch/header.png)
 
 # Project Archived
 
